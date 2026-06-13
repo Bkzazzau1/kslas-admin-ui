@@ -4,6 +4,7 @@ import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
 import 'workspaces/course_registration_approval_panel.dart';
+import 'workspaces/notice_publishing_panel.dart';
 import 'workspaces/records_department_panel.dart';
 
 const _operationsPages = [
@@ -239,6 +240,9 @@ class _PrimaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pageLabel == 'Notices') {
+      return const NoticePublishingPanel();
+    }
     if (pageLabel == 'Course Registration') {
       return const CourseRegistrationApprovalPanel();
     }
