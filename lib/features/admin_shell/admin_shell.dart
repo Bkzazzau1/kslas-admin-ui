@@ -6,7 +6,12 @@ import '../../models/dashboard_models.dart';
 
 const _adminPages = [
   _PageItem('Dashboard', Icons.dashboard_outlined),
+  _PageItem('Notices', Icons.campaign_outlined),
+  _PageItem('Course Registration', Icons.app_registration_outlined),
+  _PageItem('Assignments', Icons.assignment_ind_outlined),
   _PageItem('Exams', Icons.assignment_outlined),
+  _PageItem('Results', Icons.workspace_premium_outlined),
+  _PageItem('Records', Icons.badge_outlined),
   _PageItem('Approvals', Icons.fact_check_outlined),
   _PageItem('People', Icons.groups_outlined),
 ];
@@ -49,12 +54,12 @@ class _AdminShellState extends State<AdminShell> {
           : null,
       bottomNavigationBar: compact
           ? NavigationBar(
-              selectedIndex: _selectedPage,
+              selectedIndex: _selectedPage.clamp(0, 4),
               onDestinationSelected: (value) {
                 setState(() => _selectedPage = value);
               },
               destinations: [
-                for (final page in _adminPages)
+                for (final page in _adminPages.take(5))
                   NavigationDestination(
                     icon: Icon(page.icon),
                     label: page.label,
@@ -137,32 +142,40 @@ class _SideRail extends StatelessWidget {
                 ],
               ),
             ),
-            for (var index = 0; index < _adminPages.length; index++)
-              _NavTile(
-                label: _adminPages[index].label,
-                icon: _adminPages[index].icon,
-                selected: selectedPage == index,
-                onTap: () => onPageChanged(index),
-              ),
-            const Divider(height: 28),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Role view',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ),
-            const SizedBox(height: 8),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.zero,
                 children: [
-                  for (final role in AdminRole.values)
-                    _RoleTile(
-                      role: role,
-                      selected: role == selectedRole,
-                      onTap: () => onRoleChanged(role),
+                  for (var index = 0; index < _adminPages.length; index++)
+                    _NavTile(
+                      label: _adminPages[index].label,
+                      icon: _adminPages[index].icon,
+                      selected: selectedPage == index,
+                      onTap: () => onPageChanged(index),
                     ),
+                  const Divider(height: 28),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Role view',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: [
+                        for (final role in AdminRole.values)
+                          _RoleTile(
+                            role: role,
+                            selected: role == selectedRole,
+                            onTap: () => onRoleChanged(role),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -224,9 +237,10 @@ class _AdminWorkspace extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metrics = repository.metricsFor(selectedRole);
-    final tasks = repository.tasksFor(selectedRole);
+    final tasks = repository.tasksFor(selectedRole, pageLabel: pageLabel);
     final rooms = repository.examRooms();
     final alerts = repository.alerts();
+    final workflows = repository.workflowsFor(pageLabel);
     final width = MediaQuery.sizeOf(context).width;
 
     return SafeArea(
@@ -260,6 +274,17 @@ class _AdminWorkspace extends StatelessWidget {
               itemBuilder: (context, index) {
                 return _MetricCard(metric: metrics[index]);
               },
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 28,
+              18,
+              compact ? 16 : 28,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _WorkflowPanel(workflows: workflows),
             ),
           ),
           SliverPadding(
@@ -337,9 +362,47 @@ class _WorkspaceHeader extends StatelessWidget {
         FilledButton.icon(
           onPressed: () {},
           icon: const Icon(Icons.add_task_outlined),
-          label: const Text('New action'),
+          label: Text(pageLabel == 'Notices' ? 'Publish notice' : 'New action'),
         ),
       ],
+    );
+  }
+}
+
+class _WorkflowPanel extends StatelessWidget {
+  const _WorkflowPanel({required this.workflows});
+
+  final List<String> workflows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Workspace coverage',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final workflow in workflows)
+                  Chip(
+                    avatar: const Icon(Icons.check_circle_outline, size: 18),
+                    label: Text(workflow),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -360,23 +423,21 @@ class _MetricCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(metric.icon, color: statusColor),
-                const Spacer(),
-                _StatusBadge(status: metric.status),
-              ],
+            CircleAvatar(
+              backgroundColor: statusColor.withValues(alpha: 0.14),
+              foregroundColor: statusColor,
+              child: Icon(metric.icon),
             ),
             const Spacer(),
+            Text(metric.value, style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            Text(metric.label, style: const TextStyle(fontWeight: FontWeight.w700)),
             Text(
-              metric.value,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              metric.detail,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 3),
-            Text(metric.label, style: Theme.of(context).textTheme.titleSmall),
-            Text(metric.detail, maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
@@ -391,54 +452,60 @@ class _TaskPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      title: 'Priority work',
-      icon: Icons.checklist_outlined,
-      child: Column(children: [for (final task in tasks) _TaskRow(task: task)]),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Priority work queue',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final task in tasks) _TaskTile(task: task),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _TaskRow extends StatelessWidget {
-  const _TaskRow({required this.task});
+class _TaskTile extends StatelessWidget {
+  const _TaskTile({required this.task});
 
   final AdminTask task;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = task.status.color(scheme);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 18, child: Icon(task.ownerRole.icon, size: 18)),
+          Icon(task.ownerRole.icon, color: statusColor),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      task.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    _StatusBadge(status: task.status),
-                  ],
-                ),
+                Text(task.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(task.description),
                 const SizedBox(height: 4),
                 Text(
-                  '${task.ownerRole.label} - ${task.due}',
+                  '${task.ownerRole.label} • ${task.due}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
           ),
+          _StatusPill(status: task.status),
         ],
       ),
     );
@@ -452,27 +519,40 @@ class _ExamPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      title: 'Exam rooms',
-      icon: Icons.meeting_room_outlined,
-      child: Column(
-        children: [
-          for (final room in rooms)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                child: Text(room.courseCode.substring(0, 3)),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Exam operations',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
-              title: Text(room.courseCode),
-              subtitle: Text(
-                '${room.room} - ${room.time}\n'
-                '${room.invigilator} - ${room.candidateCount} candidates',
-              ),
-              isThreeLine: true,
-              trailing: _StatusDot(status: room.status),
             ),
-        ],
+            const SizedBox(height: 12),
+            for (final room in rooms) _ExamRoomTile(room: room),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _ExamRoomTile extends StatelessWidget {
+  const _ExamRoomTile({required this.room});
+
+  final ExamRoom room;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.meeting_room_outlined),
+      title: Text('${room.courseCode} • ${room.room}'),
+      subtitle: Text('${room.time} • ${room.invigilator} • ${room.candidateCount} candidates'),
+      trailing: _StatusPill(status: room.status),
     );
   }
 }
@@ -484,64 +564,86 @@ class _AlertPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      title: 'Live alerts',
-      icon: Icons.notifications_active_outlined,
-      child: Column(
-        children: [
-          for (final alert in alerts)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: _StatusDot(status: alert.status),
-              title: Text(alert.title),
-              subtitle: Text(alert.message),
-              trailing: Text(
-                alert.time,
-                style: Theme.of(context).textTheme.bodySmall,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Live alerts',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-        ],
+            const SizedBox(height: 12),
+            for (final alert in alerts) _AlertTile(alert: alert),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.icon, required this.child});
+class _AlertTile extends StatelessWidget {
+  const _AlertTile({required this.alert});
 
-  final String title;
-  final IconData icon;
-  final Widget child;
+  final AdminAlert alert;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(Icons.circle, size: 12, color: alert.status.color(Theme.of(context).colorScheme)),
+      title: Text(alert.title),
+      subtitle: Text(alert.message),
+      trailing: Text(alert.time),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status});
+
+  final WorkStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = status.color(Theme.of(context).colorScheme);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          status.label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w700),
         ),
       ),
+    );
+  }
+}
+
+class _RoleTile extends StatelessWidget {
+  const _RoleTile({required this.role, required this.selected, required this.onTap});
+
+  final AdminRole role;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      selected: selected,
+      selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      leading: Icon(role.icon),
+      title: Text(role.label),
+      subtitle: Text(role.scope, maxLines: 2, overflow: TextOverflow.ellipsis),
+      onTap: onTap,
     );
   }
 }
@@ -561,88 +663,16 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(
         selected: selected,
-        selectedTileColor: scheme.primaryContainer,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         leading: Icon(icon),
         title: Text(label),
         onTap: onTap,
       ),
-    );
-  }
-}
-
-class _RoleTile extends StatelessWidget {
-  const _RoleTile({
-    required this.role,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AdminRole role;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      selected: selected,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      leading: Icon(role.icon),
-      title: Text(role.label),
-      subtitle: Text(role.scope, maxLines: 1, overflow: TextOverflow.ellipsis),
-      onTap: onTap,
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final WorkStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = status.color(scheme);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        child: Text(
-          status.label,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.status});
-
-  final WorkStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = status.color(Theme.of(context).colorScheme);
-
-    return Tooltip(
-      message: status.label,
-      child: Icon(Icons.circle, color: color, size: 13),
     );
   }
 }
