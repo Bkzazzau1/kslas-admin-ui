@@ -4,6 +4,7 @@ import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
 import 'workspaces/course_registration_approval_panel.dart';
+import 'workspaces/exam_management_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
 import 'workspaces/notice_publishing_panel.dart';
 import 'workspaces/records_department_panel.dart';
@@ -250,6 +251,9 @@ class _PrimaryPanel extends StatelessWidget {
     }
     if (pageLabel == 'Assignments') {
       return const LecturerAssignmentsMarkingPanel();
+    }
+    if (pageLabel == 'Exams') {
+      return const ExamManagementPanel();
     }
     if (pageLabel == 'Results') {
       return const ResultsApprovalReleasePanel();
