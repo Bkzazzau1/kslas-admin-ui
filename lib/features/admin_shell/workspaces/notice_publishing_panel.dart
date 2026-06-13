@@ -117,6 +117,7 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
                   semester: _semester,
                   requiresAcknowledgement: _requiresAcknowledgement,
                   pinned: _pinned,
+                  onTextChanged: () => setState(() {}),
                   onAuthorChanged: (value) => setState(() => _authorRole = value),
                   onScopeChanged: (value) => setState(() => _scope = value),
                   onLevelChanged: (value) => setState(() => _level = value),
@@ -174,9 +175,7 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
 
   void _publish() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Notice ready to publish to $_targetSummary'),
-      ),
+      SnackBar(content: Text('Notice ready to publish to $_targetSummary')),
     );
   }
 }
@@ -196,6 +195,7 @@ class _NoticeEditor extends StatelessWidget {
     required this.semester,
     required this.requiresAcknowledgement,
     required this.pinned,
+    required this.onTextChanged,
     required this.onAuthorChanged,
     required this.onScopeChanged,
     required this.onLevelChanged,
@@ -217,6 +217,7 @@ class _NoticeEditor extends StatelessWidget {
   final int? semester;
   final bool requiresAcknowledgement;
   final bool pinned;
+  final VoidCallback onTextChanged;
   final ValueChanged<String> onAuthorChanged;
   final ValueChanged<String> onScopeChanged;
   final ValueChanged<int?> onLevelChanged;
@@ -231,14 +232,14 @@ class _NoticeEditor extends StatelessWidget {
         TextFormField(
           controller: titleController,
           decoration: const InputDecoration(labelText: 'Notice title', prefixIcon: Icon(Icons.title_outlined)),
-          onChanged: (_) => (context as Element).markNeedsBuild(),
+          onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: bodyController,
           maxLines: 4,
           decoration: const InputDecoration(labelText: 'Notice body', prefixIcon: Icon(Icons.notes_outlined)),
-          onChanged: (_) => (context as Element).markNeedsBuild(),
+          onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -286,6 +287,7 @@ class _NoticeEditor extends StatelessWidget {
           courseController: courseController,
           level: level,
           semester: semester,
+          onTextChanged: onTextChanged,
           onLevelChanged: onLevelChanged,
           onSemesterChanged: onSemesterChanged,
         ),
@@ -293,6 +295,7 @@ class _NoticeEditor extends StatelessWidget {
         TextFormField(
           controller: referenceController,
           decoration: const InputDecoration(labelText: 'Reference / memo number', prefixIcon: Icon(Icons.tag_outlined)),
+          onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 8),
         SwitchListTile(
@@ -321,6 +324,7 @@ class _TargetFields extends StatelessWidget {
     required this.courseController,
     required this.level,
     required this.semester,
+    required this.onTextChanged,
     required this.onLevelChanged,
     required this.onSemesterChanged,
   });
@@ -332,6 +336,7 @@ class _TargetFields extends StatelessWidget {
   final TextEditingController courseController;
   final int? level;
   final int? semester;
+  final VoidCallback onTextChanged;
   final ValueChanged<int?> onLevelChanged;
   final ValueChanged<int?> onSemesterChanged;
 
@@ -353,6 +358,7 @@ class _TargetFields extends StatelessWidget {
             child: TextFormField(
               controller: departmentController,
               decoration: const InputDecoration(labelText: 'Department ID'),
+              onChanged: (_) => onTextChanged(),
             ),
           ),
         if (scope == 'Programme' || scope == 'Level' || scope == 'Cohort')
@@ -361,6 +367,7 @@ class _TargetFields extends StatelessWidget {
             child: TextFormField(
               controller: programmeController,
               decoration: const InputDecoration(labelText: 'Programme ID'),
+              onChanged: (_) => onTextChanged(),
             ),
           ),
         if (scope == 'Level' || scope == 'Cohort')
@@ -401,6 +408,7 @@ class _TargetFields extends StatelessWidget {
             child: TextFormField(
               controller: cohortController,
               decoration: const InputDecoration(labelText: 'Cohort ID'),
+              onChanged: (_) => onTextChanged(),
             ),
           ),
         if (scope == 'Course')
@@ -409,6 +417,7 @@ class _TargetFields extends StatelessWidget {
             child: TextFormField(
               controller: courseController,
               decoration: const InputDecoration(labelText: 'Course code', hintText: 'CSC 305'),
+              onChanged: (_) => onTextChanged(),
             ),
           ),
       ],
