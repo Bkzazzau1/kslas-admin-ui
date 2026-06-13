@@ -36,10 +36,15 @@ class AdminCohortBackendPath {
 }
 
 class AdminResultBackendPath {
+  static const resultBatches = '/api/v1/admin/results/batches';
   static const lecturerSubmissions = '/api/v1/admin/results/lecturer-submissions';
+  static const submitBatch = '/api/v1/admin/results/{batchId}/submit';
+  static const moderatorQuery = '/api/v1/admin/results/{batchId}/moderator-query';
   static const hodReview = '/api/v1/admin/results/{batchId}/hod-review';
-  static const examOfficeRelease = '/api/v1/admin/results/{batchId}/release';
   static const recordsReconcile = '/api/v1/admin/results/{batchId}/records-reconcile';
+  static const examOfficeRelease = '/api/v1/admin/results/{batchId}/release';
+  static const studentPublication = '/api/v1/admin/results/{batchId}/publish-to-students';
+  static const auditTrail = '/api/v1/admin/results/{batchId}/audit-trail';
 }
 
 class AdminWorkflowContract {
@@ -64,6 +69,14 @@ class AdminWorkflowContract {
     'Students submit assignments in the student app, while staff review and grade submissions in kslas-admin-ui.',
     'Rubric scores, feedback, late decisions, integrity flags, and released marks must be audit logged.',
     'Assignment marks should move to result workflow only after lecturer release or department policy approval.',
+  ];
+
+  static const resultApprovalRules = [
+    'Lecturers submit result batches only for assigned courses.',
+    'Moderator or HoD review must happen before exam office release where institution policy requires it.',
+    'Records department must reconcile repeated courses, missing scores, carryovers and student academic history before final publication.',
+    'Exam office controls final release and student publication.',
+    'Every score edit, query, review, reconciliation and release action must be audit logged.',
   ];
 
   static const recordsDepartmentRules = [
