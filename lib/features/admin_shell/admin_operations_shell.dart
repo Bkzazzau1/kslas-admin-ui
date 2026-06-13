@@ -7,6 +7,7 @@ import 'workspaces/course_registration_approval_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
 import 'workspaces/notice_publishing_panel.dart';
 import 'workspaces/records_department_panel.dart';
+import 'workspaces/results_approval_release_panel.dart';
 
 const _operationsPages = [
   _OpsPage('Dashboard', Icons.dashboard_outlined),
@@ -249,6 +250,9 @@ class _PrimaryPanel extends StatelessWidget {
     }
     if (pageLabel == 'Assignments') {
       return const LecturerAssignmentsMarkingPanel();
+    }
+    if (pageLabel == 'Results') {
+      return const ResultsApprovalReleasePanel();
     }
     if (pageLabel == 'Records') {
       return const RecordsDepartmentPanel();
