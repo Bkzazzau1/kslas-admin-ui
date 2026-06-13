@@ -32,6 +32,7 @@ class _AdminShellState extends State<AdminShell> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final compact = width < 760;
+    final compactSelectedPage = _selectedPage > 4 ? 4 : _selectedPage;
 
     return Scaffold(
       appBar: compact
@@ -54,7 +55,7 @@ class _AdminShellState extends State<AdminShell> {
           : null,
       bottomNavigationBar: compact
           ? NavigationBar(
-              selectedIndex: _selectedPage.clamp(0, 4),
+              selectedIndex: compactSelectedPage,
               onDestinationSelected: (value) {
                 setState(() => _selectedPage = value);
               },
