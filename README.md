@@ -4,10 +4,46 @@ Flutter admin console for KSLAS academic operations across Android, iOS, web, de
 
 ## Current Scope
 
-- Role-based workspace views for lecturers, invigilators, exam officers, DLC director, HoDs, level advisers, and all admins.
-- Responsive shell for mobile, tablet, desktop, and web.
-- Operational dashboard covering exams, approvals, people, alerts, invigilation, and result workflows.
-- Mock repository layer ready to be replaced with real API services.
+This repository owns all non-student portals and administrative workflows.
+
+- Lecturer Portal
+- Moderator Portal
+- Invigilator Portal
+- Exam Officer Portal
+- Records Department Portal
+- Department Admin Portal
+- Faculty Admin Portal
+- HoD Portal
+- Level Adviser Portal
+- DLC Director Portal
+- Super Admin Portal
+
+## Workflows Owned Here
+
+- Lecturer course notices, assignments, marking, question preparation, and result recommendations.
+- Moderator question review, rubric checks, and moderation feedback.
+- Exam officer exam scheduling, notice publishing, question approval, invigilation oversight, and result release.
+- Records department student records, cohorts, course registration audit, carryover/repeat approval, CGPA and transcript preview.
+- Department/faculty curriculum, programme, staff allocation, course registration rules, and academic compliance.
+- Invigilator candidate check-in, hall monitoring, malpractice reports, and incident escalation.
+
+## Student App Separation
+
+The student-only app is `k-slas-my-course`.
+
+That app should contain only student-facing screens such as:
+
+- student courses
+- student course registration
+- student academic record and CGPA view
+- student assignment submission
+- student exams
+- student live classes
+- student results
+- student noticeboard
+- student notifications
+
+Any lecturer, exam officer, records, invigilator, moderator, HoD, department, faculty, or admin workflow belongs in this repository.
 
 ## Run
 
