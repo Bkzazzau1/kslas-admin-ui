@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
+import 'workspaces/academic_structure_panel.dart';
 import 'workspaces/course_registration_approval_panel.dart';
 import 'workspaces/exam_management_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
@@ -14,6 +15,7 @@ import 'workspaces/results_approval_release_panel.dart';
 
 const _operationsPages = [
   _OpsPage('Dashboard', Icons.dashboard_outlined),
+  _OpsPage('Academic Structure', Icons.account_tree_outlined),
   _OpsPage('Notices', Icons.campaign_outlined),
   _OpsPage('Course Registration', Icons.app_registration_outlined),
   _OpsPage('Assignments', Icons.assignment_ind_outlined),
@@ -34,7 +36,7 @@ class AdminOperationsShell extends StatefulWidget {
 class _AdminOperationsShellState extends State<AdminOperationsShell> {
   final MockAdminRepository _repository = const MockAdminRepository();
   AdminRole _selectedRole = AdminRole.recordsDepartment;
-  int _selectedPage = 2;
+  int _selectedPage = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +247,9 @@ class _PrimaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pageLabel == 'Academic Structure') {
+      return const AcademicStructurePanel();
+    }
     if (pageLabel == 'Notices') {
       return const NoticePublishingPanel();
     }
