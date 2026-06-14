@@ -121,7 +121,7 @@ class _ModeratorQuestionReviewPanelState extends State<ModeratorQuestionReviewPa
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All statuses')),
                   DropdownMenuItem(value: 'Needs Review', child: Text('Needs Review')),
@@ -136,7 +136,7 @@ class _ModeratorQuestionReviewPanelState extends State<ModeratorQuestionReviewPa
             SizedBox(
               width: 240,
               child: DropdownButtonFormField<String>(
-                value: _selectedFormat,
+                initialValue: _selectedFormat,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All formats')),
                   DropdownMenuItem(value: 'Objective', child: Text('Objective')),

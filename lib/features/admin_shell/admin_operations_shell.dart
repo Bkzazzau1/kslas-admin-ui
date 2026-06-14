@@ -17,6 +17,7 @@ import 'workspaces/records_department_panel.dart';
 import 'workspaces/reports_analytics_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
 import 'workspaces/student_support_helpdesk_panel.dart';
+import 'widgets/admin_metric_card.dart';
 
 const _operationsPages = [
   _OpsPage('Dashboard', Icons.dashboard_outlined),
@@ -63,7 +64,9 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
               ],
             )
           : null,
-      drawer: compact ? _RoleDrawer(selectedRole: _selectedRole, onRoleChanged: _changeRole) : null,
+      drawer: compact
+          ? _RoleDrawer(selectedRole: _selectedRole, onRoleChanged: _changeRole)
+          : null,
       body: Row(
         children: [
           if (!compact)
@@ -86,10 +89,14 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
       bottomNavigationBar: compact
           ? NavigationBar(
               selectedIndex: _selectedPage > 4 ? 4 : _selectedPage,
-              onDestinationSelected: (value) => setState(() => _selectedPage = value),
+              onDestinationSelected: (value) =>
+                  setState(() => _selectedPage = value),
               destinations: [
                 for (final page in _operationsPages.take(5))
-                  NavigationDestination(icon: Icon(page.icon), label: page.label),
+                  NavigationDestination(
+                    icon: Icon(page.icon),
+                    label: page.label,
+                  ),
               ],
             )
           : null,
@@ -128,7 +135,10 @@ class _AdminSideBar extends StatelessWidget {
                 foregroundColor: scheme.onPrimary,
                 child: const Icon(Icons.account_balance_outlined),
               ),
-              title: const Text('KSLAS Admin', style: TextStyle(fontWeight: FontWeight.w900)),
+              title: const Text(
+                'KSLAS Admin',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
               subtitle: const Text('Non-student operations'),
             ),
             const SizedBox(height: 12),
@@ -142,11 +152,18 @@ class _AdminSideBar extends StatelessWidget {
             const Divider(height: 30),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('Role view', style: Theme.of(context).textTheme.labelLarge),
+              child: Text(
+                'Role view',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
             ),
             const SizedBox(height: 8),
             for (final role in AdminRole.values)
-              _RoleTile(role: role, selected: role == selectedRole, onTap: () => onRoleChanged(role)),
+              _RoleTile(
+                role: role,
+                selected: role == selectedRole,
+                onTap: () => onRoleChanged(role),
+              ),
           ],
         ),
       ),
@@ -213,8 +230,15 @@ class _AdminOperationsWorkspace extends StatelessWidget {
       child: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(compact ? 16 : 28, compact ? 8 : 24, compact ? 16 : 28, 16),
-            sliver: SliverToBoxAdapter(child: _Header(role: selectedRole, pageLabel: pageLabel)),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 28,
+              compact ? 8 : 24,
+              compact ? 16 : 28,
+              16,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _Header(role: selectedRole, pageLabel: pageLabel),
+            ),
           ),
           SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 28),
@@ -224,18 +248,26 @@ class _AdminOperationsWorkspace extends StatelessWidget {
                 crossAxisCount: compact
                     ? 1
                     : width > 1180
-                        ? 4
-                        : 2,
-                mainAxisExtent: 150,
+                    ? 4
+                    : 2,
+                mainAxisExtent: AdminMetricCard.gridExtent,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
-              itemBuilder: (context, index) => _MetricCard(metric: metrics[index]),
+              itemBuilder: (context, index) =>
+                  AdminMetricCard(metric: metrics[index]),
             ),
           ),
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(compact ? 16 : 28, 18, compact ? 16 : 28, 0),
-            sliver: SliverToBoxAdapter(child: _WorkflowPanel(workflows: workflows)),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 28,
+              18,
+              compact ? 16 : 28,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _WorkflowPanel(workflows: workflows),
+            ),
           ),
           SliverPadding(
             padding: EdgeInsets.all(compact ? 16 : 28),
@@ -325,7 +357,12 @@ class _Header extends StatelessWidget {
             children: [
               Text(pageLabel, style: text.labelLarge),
               const SizedBox(height: 4),
-              Text('${role.label} workspace', style: text.headlineMedium?.copyWith(fontWeight: FontWeight.w900)),
+              Text(
+                '${role.label} workspace',
+                style: text.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 6),
               Text(role.scope, style: text.bodyLarge),
             ],
@@ -351,47 +388,29 @@ class _WorkflowPanel extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Workspace coverage', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final workflow in workflows)
-                Chip(avatar: const Icon(Icons.check_circle_outline, size: 18), label: Text(workflow)),
-            ],
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.metric});
-
-  final AdminMetric metric;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final statusColor = metric.status.color(scheme);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          CircleAvatar(
-            backgroundColor: statusColor.withValues(alpha: 0.14),
-            foregroundColor: statusColor,
-            child: Icon(metric.icon),
-          ),
-          const Spacer(),
-          Text(metric.value, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 4),
-          Text(metric.label, style: const TextStyle(fontWeight: FontWeight.w800)),
-          Text(metric.detail, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Workspace coverage',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final workflow in workflows)
+                  Chip(
+                    avatar: const Icon(Icons.check_circle_outline, size: 18),
+                    label: Text(workflow),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -407,11 +426,19 @@ class _TaskPanel extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Priority work queue', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          for (final task in tasks) _TaskTile(task: task),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Priority work queue',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            for (final task in tasks) _TaskTile(task: task),
+          ],
+        ),
       ),
     );
   }
@@ -428,20 +455,32 @@ class _TaskTile extends StatelessWidget {
     final statusColor = task.status.color(scheme);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(task.ownerRole.icon, color: statusColor),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(task.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(task.description),
-            const SizedBox(height: 4),
-            Text('${task.ownerRole.label} • ${task.due}', style: Theme.of(context).textTheme.bodySmall),
-          ]),
-        ),
-        _StatusPill(status: task.status),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(task.ownerRole.icon, color: statusColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(task.description),
+                const SizedBox(height: 4),
+                Text(
+                  '${task.ownerRole.label} • ${task.due}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          _StatusPill(status: task.status),
+        ],
+      ),
     );
   }
 }
@@ -455,17 +494,27 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = status.color(Theme.of(context).colorScheme);
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(status.label, style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+        child: Text(
+          status.label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
 }
 
 class _RoleTile extends StatelessWidget {
-  const _RoleTile({required this.role, required this.selected, required this.onTap});
+  const _RoleTile({
+    required this.role,
+    required this.selected,
+    required this.onTap,
+  });
 
   final AdminRole role;
   final bool selected;
@@ -486,7 +535,12 @@ class _RoleTile extends StatelessWidget {
 }
 
 class _NavTile extends StatelessWidget {
-  const _NavTile({required this.label, required this.icon, required this.selected, required this.onTap});
+  const _NavTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final IconData icon;

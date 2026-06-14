@@ -249,7 +249,7 @@ class _NoticeEditor extends StatelessWidget {
             SizedBox(
               width: 260,
               child: DropdownButtonFormField<String>(
-                value: authorRole,
+                initialValue: authorRole,
                 items: const [
                   DropdownMenuItem(value: 'Lecturer', child: Text('Lecturer')),
                   DropdownMenuItem(value: 'Exam Officer', child: Text('Exam Officer')),
@@ -263,7 +263,7 @@ class _NoticeEditor extends StatelessWidget {
             SizedBox(
               width: 260,
               child: DropdownButtonFormField<String>(
-                value: scope,
+                initialValue: scope,
                 items: const [
                   DropdownMenuItem(value: 'General', child: Text('General')),
                   DropdownMenuItem(value: 'Department', child: Text('Department')),
@@ -374,7 +374,7 @@ class _TargetFields extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<int?>(
-              value: level,
+              initialValue: level,
               items: const [
                 DropdownMenuItem(value: null, child: Text('All levels')),
                 DropdownMenuItem(value: 100, child: Text('100 Level')),
@@ -391,7 +391,7 @@ class _TargetFields extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<int?>(
-              value: semester,
+              initialValue: semester,
               items: const [
                 DropdownMenuItem(value: null, child: Text('All semesters')),
                 DropdownMenuItem(value: 1, child: Text('Semester 1')),

@@ -125,7 +125,7 @@ class _ExamManagementPanelState extends State<ExamManagementPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All readiness')),
                   DropdownMenuItem(value: 'Ready', child: Text('Ready')),
@@ -139,7 +139,7 @@ class _ExamManagementPanelState extends State<ExamManagementPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedMode,
+                initialValue: _selectedMode,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All modes')),
                   DropdownMenuItem(value: 'CBT Centre', child: Text('CBT Centre')),

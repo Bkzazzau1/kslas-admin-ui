@@ -133,7 +133,7 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
                 SizedBox(
                   width: 220,
                   child: DropdownButtonFormField<String>(
-                    value: _selectedCourse,
+                    initialValue: _selectedCourse,
                     items: const [
                       DropdownMenuItem(value: 'All', child: Text('All courses')),
                       DropdownMenuItem(value: 'CSC 305', child: Text('CSC 305')),
@@ -147,7 +147,7 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
                 SizedBox(
                   width: 240,
                   child: DropdownButtonFormField<String>(
-                    value: _selectedStatus,
+                    initialValue: _selectedStatus,
                     items: const [
                       DropdownMenuItem(value: 'All', child: Text('All statuses')),
                       DropdownMenuItem(value: 'Pending Marking', child: Text('Pending Marking')),

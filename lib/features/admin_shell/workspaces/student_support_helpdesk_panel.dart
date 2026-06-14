@@ -125,7 +125,7 @@ class _StudentSupportHelpdeskPanelState extends State<StudentSupportHelpdeskPane
             SizedBox(
               width: 240,
               child: DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All categories')),
                   DropdownMenuItem(value: 'Missing Result', child: Text('Missing Result')),
@@ -140,7 +140,7 @@ class _StudentSupportHelpdeskPanelState extends State<StudentSupportHelpdeskPane
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All statuses')),
                   DropdownMenuItem(value: 'Open', child: Text('Open')),

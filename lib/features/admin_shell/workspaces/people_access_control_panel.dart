@@ -121,7 +121,7 @@ class _PeopleAccessControlPanelState extends State<PeopleAccessControlPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedRole,
+                initialValue: _selectedRole,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All roles')),
                   DropdownMenuItem(value: 'Lecturer', child: Text('Lecturer')),
@@ -137,7 +137,7 @@ class _PeopleAccessControlPanelState extends State<PeopleAccessControlPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedUnit,
+                initialValue: _selectedUnit,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All units')),
                   DropdownMenuItem(value: 'Computing', child: Text('Computing')),

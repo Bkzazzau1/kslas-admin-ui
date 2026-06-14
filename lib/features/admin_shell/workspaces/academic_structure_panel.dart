@@ -141,7 +141,7 @@ class _AcademicStructurePanelState extends State<AcademicStructurePanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedFaculty,
+                initialValue: _selectedFaculty,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All faculties')),
                   DropdownMenuItem(value: 'Computing', child: Text('Computing')),
@@ -155,7 +155,7 @@ class _AcademicStructurePanelState extends State<AcademicStructurePanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All statuses')),
                   DropdownMenuItem(value: 'Active', child: Text('Active')),

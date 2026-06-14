@@ -123,7 +123,7 @@ class _ChiefInvigilatorControlRoomPanelState extends State<ChiefInvigilatorContr
             SizedBox(
               width: 220,
               child: DropdownButtonFormField<String>(
-                value: _selectedRisk,
+                initialValue: _selectedRisk,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All risk levels')),
                   DropdownMenuItem(value: 'High', child: Text('High')),
@@ -137,7 +137,7 @@ class _ChiefInvigilatorControlRoomPanelState extends State<ChiefInvigilatorContr
             SizedBox(
               width: 240,
               child: DropdownButtonFormField<String>(
-                value: _selectedMode,
+                initialValue: _selectedMode,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All modes')),
                   DropdownMenuItem(value: 'CBT Centre', child: Text('CBT Centre')),

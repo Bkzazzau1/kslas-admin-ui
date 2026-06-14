@@ -138,7 +138,7 @@ class _ReportsAnalyticsPanelState extends State<ReportsAnalyticsPanel> {
             SizedBox(
               width: 260,
               child: DropdownButtonFormField<String>(
-                value: _selectedReport,
+                initialValue: _selectedReport,
                 items: const [
                   DropdownMenuItem(value: 'Management Summary', child: Text('Management Summary')),
                   DropdownMenuItem(value: 'Student Performance', child: Text('Student Performance')),
@@ -152,7 +152,7 @@ class _ReportsAnalyticsPanelState extends State<ReportsAnalyticsPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedPeriod,
+                initialValue: _selectedPeriod,
                 items: const [
                   DropdownMenuItem(value: 'Current Semester', child: Text('Current Semester')),
                   DropdownMenuItem(value: 'Current Session', child: Text('Current Session')),

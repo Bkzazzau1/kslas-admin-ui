@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
+import 'widgets/admin_metric_card.dart';
 
 const _adminPages = [
   _PageItem('Dashboard', Icons.dashboard_outlined),
@@ -268,12 +269,12 @@ class _AdminWorkspace extends StatelessWidget {
                     : width > 1180
                     ? 4
                     : 2,
-                mainAxisExtent: 156,
+                mainAxisExtent: AdminMetricCard.gridExtent,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               itemBuilder: (context, index) {
-                return _MetricCard(metric: metrics[index]);
+                return AdminMetricCard(metric: metrics[index]);
               },
             ),
           ),
@@ -385,9 +386,9 @@ class _WorkflowPanel extends StatelessWidget {
           children: [
             Text(
               'Workspace coverage',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -400,44 +401,6 @@ class _WorkflowPanel extends StatelessWidget {
                     label: Text(workflow),
                   ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.metric});
-
-  final AdminMetric metric;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final statusColor = metric.status.color(scheme);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: statusColor.withValues(alpha: 0.14),
-              foregroundColor: statusColor,
-              child: Icon(metric.icon),
-            ),
-            const Spacer(),
-            Text(metric.value, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 4),
-            Text(metric.label, style: const TextStyle(fontWeight: FontWeight.w700)),
-            Text(
-              metric.detail,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -461,9 +424,9 @@ class _TaskPanel extends StatelessWidget {
           children: [
             Text(
               'Priority work queue',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             for (final task in tasks) _TaskTile(task: task),
@@ -495,7 +458,10 @@ class _TaskTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(task.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  task.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 4),
                 Text(task.description),
                 const SizedBox(height: 4),
@@ -528,9 +494,9 @@ class _ExamPanel extends StatelessWidget {
           children: [
             Text(
               'Exam operations',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             for (final room in rooms) _ExamRoomTile(room: room),
@@ -552,7 +518,9 @@ class _ExamRoomTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.meeting_room_outlined),
       title: Text('${room.courseCode} • ${room.room}'),
-      subtitle: Text('${room.time} • ${room.invigilator} • ${room.candidateCount} candidates'),
+      subtitle: Text(
+        '${room.time} • ${room.invigilator} • ${room.candidateCount} candidates',
+      ),
       trailing: _StatusPill(status: room.status),
     );
   }
@@ -573,9 +541,9 @@ class _AlertPanel extends StatelessWidget {
           children: [
             Text(
               'Live alerts',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             for (final alert in alerts) _AlertTile(alert: alert),
@@ -595,7 +563,11 @@ class _AlertTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.circle, size: 12, color: alert.status.color(Theme.of(context).colorScheme)),
+      leading: Icon(
+        Icons.circle,
+        size: 12,
+        color: alert.status.color(Theme.of(context).colorScheme),
+      ),
       title: Text(alert.title),
       subtitle: Text(alert.message),
       trailing: Text(alert.time),
@@ -629,7 +601,11 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _RoleTile extends StatelessWidget {
-  const _RoleTile({required this.role, required this.selected, required this.onTap});
+  const _RoleTile({
+    required this.role,
+    required this.selected,
+    required this.onTap,
+  });
 
   final AdminRole role;
   final bool selected;

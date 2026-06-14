@@ -118,7 +118,7 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStage,
+                initialValue: _selectedStage,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All stages')),
                   DropdownMenuItem(value: 'HoD Review', child: Text('HoD Review')),
@@ -133,7 +133,7 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedDepartment,
+                initialValue: _selectedDepartment,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All departments')),
                   DropdownMenuItem(value: 'Computing', child: Text('Computing')),

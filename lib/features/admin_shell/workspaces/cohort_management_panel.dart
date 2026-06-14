@@ -138,7 +138,7 @@ class _CohortManagementPanelState extends State<CohortManagementPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedMode,
+                initialValue: _selectedMode,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All modes')),
                   DropdownMenuItem(value: 'Regular', child: Text('Regular')),
@@ -153,7 +153,7 @@ class _CohortManagementPanelState extends State<CohortManagementPanel> {
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All statuses')),
                   DropdownMenuItem(value: 'Active', child: Text('Active')),

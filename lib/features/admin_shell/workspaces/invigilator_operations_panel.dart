@@ -129,7 +129,7 @@ class _InvigilatorOperationsPanelState extends State<InvigilatorOperationsPanel>
             SizedBox(
               width: 250,
               child: DropdownButtonFormField<String>(
-                value: _selectedRoom,
+                initialValue: _selectedRoom,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All rooms')),
                   DropdownMenuItem(value: 'ICT Lab A', child: Text('ICT Lab A')),
@@ -144,7 +144,7 @@ class _InvigilatorOperationsPanelState extends State<InvigilatorOperationsPanel>
             SizedBox(
               width: 230,
               child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: const [
                   DropdownMenuItem(value: 'All', child: Text('All statuses')),
                   DropdownMenuItem(value: 'Ready', child: Text('Ready')),
