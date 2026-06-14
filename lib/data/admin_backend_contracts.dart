@@ -81,6 +81,17 @@ class AdminInvigilationBackendPath {
   static const sessionAuditLogs = '/api/v1/admin/invigilation/sessions/{sessionId}/audit-logs';
 }
 
+class AdminExamSessionOverviewBackendPath {
+  static const overview = '/api/v1/admin/exam-sessions/overview';
+  static const sessionDetail = '/api/v1/admin/exam-sessions/{sessionId}';
+  static const riskSummary = '/api/v1/admin/exam-sessions/{sessionId}/risk-summary';
+  static const reports = '/api/v1/admin/exam-sessions/{sessionId}/reports';
+  static const escalationReviews = '/api/v1/admin/exam-sessions/{sessionId}/escalation-reviews';
+  static const holdSignOff = '/api/v1/admin/exam-sessions/{sessionId}/hold-sign-off';
+  static const approveSignOff = '/api/v1/admin/exam-sessions/{sessionId}/approve-sign-off';
+  static const sessionAuditLogs = '/api/v1/admin/exam-sessions/{sessionId}/audit-logs';
+}
+
 class AdminPeopleBackendPath {
   static const staffAccounts = '/api/v1/admin/staff';
   static const createStaff = '/api/v1/admin/staff';
@@ -129,7 +140,7 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, invigilation operations, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, invigilation operations, exam session overview, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
   ];
 
   static const academicStructureRules = [
@@ -186,6 +197,14 @@ class AdminWorkflowContract {
     'Workstation, device, app ID and network status are monitoring signals for operations and must not be controlled by the student app.',
     'Incidents and malpractice reports must be created, escalated, resolved and audited inside the admin UI.',
     'Room closure should require candidate count reconciliation, submission sync status, incident review and invigilator sign-off.',
+  ];
+
+  static const examSessionOverviewRules = [
+    'Chief invigilators and authorized exam officers may view all active rooms, online groups, open reports, escalations and pending sign-offs for an exam session.',
+    'Session overview should aggregate data from invigilation rooms without allowing student-side control operations.',
+    'Sign-off should require candidate reconciliation, submission sync status, unresolved-report review and room-level invigilator sign-off.',
+    'High-risk sessions should not be signed off until escalated reports are reviewed by the authorized role.',
+    'Every overview review, escalation review, sign-off hold and sign-off approval must be audit logged.',
   ];
 
   static const peopleAccessRules = [
