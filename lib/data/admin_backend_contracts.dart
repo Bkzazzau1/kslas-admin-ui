@@ -27,6 +27,17 @@ class AdminAssignmentBackendPath {
   static const lateSubmissionDecisions = '/api/v1/admin/assignments/{assignmentId}/late-submissions';
 }
 
+class AdminQuestionReviewBackendPath {
+  static const questionSets = '/api/v1/admin/question-sets';
+  static const questionSetDetail = '/api/v1/admin/question-sets/{questionSetId}';
+  static const addComment = '/api/v1/admin/question-sets/{questionSetId}/comments';
+  static const approveQuestionSet = '/api/v1/admin/question-sets/{questionSetId}/approve';
+  static const returnToLecturer = '/api/v1/admin/question-sets/{questionSetId}/return-to-lecturer';
+  static const rubricReview = '/api/v1/admin/question-sets/{questionSetId}/rubric-review';
+  static const difficultyReview = '/api/v1/admin/question-sets/{questionSetId}/difficulty-review';
+  static const handoverToExamOffice = '/api/v1/admin/question-sets/{questionSetId}/handover-to-exam-office';
+}
+
 class AdminExamBackendPath {
   static const examPlans = '/api/v1/admin/exams';
   static const createExam = '/api/v1/admin/exams';
@@ -69,7 +80,7 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, assignment creation, grading, exam scheduling, question approval, invigilator assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
   ];
 
   static const courseRegistrationApprovalRules = [
@@ -84,6 +95,14 @@ class AdminWorkflowContract {
     'Students submit assignments in the student app, while staff review and grade submissions in kslas-admin-ui.',
     'Rubric scores, feedback, late decisions, integrity flags, and released marks must be audit logged.',
     'Assignment marks should move to result workflow only after lecturer release or department policy approval.',
+  ];
+
+  static const questionReviewRules = [
+    'Lecturers submit question sets for assigned courses only.',
+    'Moderators review question clarity, coverage, difficulty balance, marking guide, answer key, and rubric completeness.',
+    'Moderators may approve, return to lecturer, or add issue comments before exam office packaging.',
+    'Approved question sets may be handed over to the exam office for secure packaging and scheduling.',
+    'Every moderation comment, approval, return, rubric change, and handover must be audit logged.',
   ];
 
   static const examManagementRules = [
