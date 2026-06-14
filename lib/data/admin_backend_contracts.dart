@@ -7,6 +7,22 @@ class AdminNoticeBackendPath {
   static const auditLogs = '/api/v1/admin/notices/{noticeId}/audit-logs';
 }
 
+class AdminSupportBackendPath {
+  static const tickets = '/api/v1/admin/support/tickets';
+  static const ticketDetail = '/api/v1/admin/support/tickets/{ticketId}';
+  static const createTicket = '/api/v1/admin/support/tickets';
+  static const assignTicket = '/api/v1/admin/support/tickets/{ticketId}/assign';
+  static const escalateTicket = '/api/v1/admin/support/tickets/{ticketId}/escalate';
+  static const resolveTicket = '/api/v1/admin/support/tickets/{ticketId}/resolve';
+  static const reopenTicket = '/api/v1/admin/support/tickets/{ticketId}/reopen';
+  static const ticketComments = '/api/v1/admin/support/tickets/{ticketId}/comments';
+  static const missingResultFollowUp = '/api/v1/admin/support/tickets/{ticketId}/missing-result-follow-up';
+  static const registrationIssueFollowUp = '/api/v1/admin/support/tickets/{ticketId}/registration-follow-up';
+  static const examIncidentFollowUp = '/api/v1/admin/support/tickets/{ticketId}/exam-incident-follow-up';
+  static const assignmentIssueFollowUp = '/api/v1/admin/support/tickets/{ticketId}/assignment-follow-up';
+  static const supportAuditLogs = '/api/v1/admin/support/tickets/{ticketId}/audit-logs';
+}
+
 class AdminAcademicStructureBackendPath {
   static const faculties = '/api/v1/admin/academic/faculties';
   static const departments = '/api/v1/admin/academic/departments';
@@ -140,7 +156,16 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, invigilation operations, exam session overview, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, support ticket handling, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, invigilation operations, exam session overview, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+  ];
+
+  static const supportHelpdeskRules = [
+    'Students may create support tickets from the student app, but ticket assignment, escalation, resolution and audit review belong in kslas-admin-ui.',
+    'Missing-result tickets must be linked to records, result batches and course attempts before resolution.',
+    'Course-registration tickets must be linked to cohort rules, curriculum maps and approval history.',
+    'Exam-incident follow-up must be linked to exam session reports and invigilation logs where applicable.',
+    'Assignment support must be linked to assignment submissions, grading status and lecturer feedback.',
+    'Every assignment, escalation, comment, resolution and reopen action must be audit logged.',
   ];
 
   static const academicStructureRules = [
