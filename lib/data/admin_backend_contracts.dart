@@ -7,6 +7,19 @@ class AdminNoticeBackendPath {
   static const auditLogs = '/api/v1/admin/notices/{noticeId}/audit-logs';
 }
 
+class AdminAcademicStructureBackendPath {
+  static const faculties = '/api/v1/admin/academic/faculties';
+  static const departments = '/api/v1/admin/academic/departments';
+  static const programmes = '/api/v1/admin/academic/programmes';
+  static const courses = '/api/v1/admin/academic/courses';
+  static const curriculumMaps = '/api/v1/admin/academic/curriculum-maps';
+  static const programmeLevels = '/api/v1/admin/academic/programmes/{programmeId}/levels';
+  static const programmeSemesters = '/api/v1/admin/academic/programmes/{programmeId}/semesters';
+  static const programmeCourses = '/api/v1/admin/academic/programmes/{programmeId}/courses';
+  static const cohortMappings = '/api/v1/admin/academic/cohort-mappings';
+  static const academicStructureAuditLogs = '/api/v1/admin/academic/audit-logs';
+}
+
 class AdminCourseRegistrationBackendPath {
   static const pendingRegistrations = '/api/v1/admin/course-registrations/pending';
   static const approveRegistration = '/api/v1/admin/course-registrations/{registrationId}/approve';
@@ -94,7 +107,15 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+  ];
+
+  static const academicStructureRules = [
+    'Faculties, departments, programmes, courses, curriculum maps, levels, semesters and cohorts are admin-only records.',
+    'Programme curriculum must define core, elective and shared courses before student course registration is opened.',
+    'Level, semester, credit load, course type and cohort mappings must be versioned by academic session where policy requires it.',
+    'Shared courses such as GST must be mapped without duplicating student academic records.',
+    'Every structural change must be audit logged because it affects registration, records, results and transcripts.',
   ];
 
   static const courseRegistrationApprovalRules = [
