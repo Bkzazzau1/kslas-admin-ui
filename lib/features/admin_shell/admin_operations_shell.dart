@@ -8,6 +8,7 @@ import 'workspaces/exam_management_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
 import 'workspaces/moderator_question_review_panel.dart';
 import 'workspaces/notice_publishing_panel.dart';
+import 'workspaces/people_access_control_panel.dart';
 import 'workspaces/records_department_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
 
@@ -264,6 +265,9 @@ class _PrimaryPanel extends StatelessWidget {
     }
     if (pageLabel == 'Approvals') {
       return const ModeratorQuestionReviewPanel();
+    }
+    if (pageLabel == 'People') {
+      return const PeopleAccessControlPanel();
     }
     return _TaskPanel(tasks: tasks);
   }
