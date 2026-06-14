@@ -86,6 +86,13 @@ class AdminCohortBackendPath {
   static const updateCohort = '/api/v1/admin/cohorts/{cohortId}';
   static const archiveCohort = '/api/v1/admin/cohorts/{cohortId}/archive';
   static const assignStudents = '/api/v1/admin/cohorts/{cohortId}/students';
+  static const removeStudents = '/api/v1/admin/cohorts/{cohortId}/students/remove';
+  static const registrationRules = '/api/v1/admin/cohorts/{cohortId}/course-registration-rules';
+  static const noticeTargeting = '/api/v1/admin/cohorts/{cohortId}/notice-targeting';
+  static const resultMapping = '/api/v1/admin/cohorts/{cohortId}/result-mapping';
+  static const recordsMapping = '/api/v1/admin/cohorts/{cohortId}/records-mapping';
+  static const promoteCohort = '/api/v1/admin/cohorts/{cohortId}/promote';
+  static const cohortAuditLogs = '/api/v1/admin/cohorts/{cohortId}/audit-logs';
 }
 
 class AdminResultBackendPath {
@@ -107,7 +114,7 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
   ];
 
   static const academicStructureRules = [
@@ -116,6 +123,15 @@ class AdminWorkflowContract {
     'Level, semester, credit load, course type and cohort mappings must be versioned by academic session where policy requires it.',
     'Shared courses such as GST must be mapped without duplicating student academic records.',
     'Every structural change must be audit logged because it affects registration, records, results and transcripts.',
+  ];
+
+  static const cohortManagementRules = [
+    'Cohorts connect students to programme, intake year, study mode, level, semester, course registration, notices, records and results.',
+    'A student may belong to an academic programme cohort and also shared course cohorts such as GST or institution-wide groups.',
+    'Course registration rules must derive from programme curriculum and cohort-specific calendar or mode rules.',
+    'Notice targeting may use cohort IDs, but the student app must only receive notices matching the authenticated student cohort membership.',
+    'Cohort promotion must update level, semester and academic session carefully and must not overwrite historical academic records.',
+    'Every cohort creation, student assignment, removal, promotion, registration-rule update and result mapping change must be audit logged.',
   ];
 
   static const courseRegistrationApprovalRules = [
