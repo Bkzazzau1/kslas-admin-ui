@@ -573,6 +573,8 @@ class _AssignmentMarkingWorkspaceState
   int _selectedLine = 2;
   Color _inkColor = Colors.green;
   double _inkSize = 4;
+  _DrawingTool _drawingTool = _DrawingTool.pen;
+  final List<_InkStroke> _strokes = [];
   final List<_ScriptAnnotation> _annotations = const [
     _ScriptAnnotation(
       line: 2,
@@ -587,13 +589,6 @@ class _AssignmentMarkingWorkspaceState
       color: Colors.green,
       text: 'Correct BFS point',
       strokeWidth: 4,
-    ),
-    _ScriptAnnotation(
-      line: 9,
-      type: _AnnotationType.inkMark,
-      color: Colors.red,
-      text: 'X',
-      strokeWidth: 5,
     ),
   ].toList();
   final _noteController = TextEditingController(
@@ -657,12 +652,17 @@ class _AssignmentMarkingWorkspaceState
             selectedLine: _selectedLine,
             inkColor: _inkColor,
             inkSize: _inkSize,
+            drawingTool: _drawingTool,
             noteController: _noteController,
             lineCount: _assignmentSubmissionLines.length,
             onLineChanged: (value) => setState(() => _selectedLine = value),
             onInkChanged: (value) => setState(() => _inkColor = value),
             onInkSizeChanged: (value) => setState(() => _inkSize = value),
+            onDrawingToolChanged: (value) =>
+                setState(() => _drawingTool = value),
             onAddAnnotation: _addAnnotation,
+            onUndoStroke: _undoStroke,
+            onClearStrokes: _clearStrokes,
           ),
           const SizedBox(height: 14),
           LayoutBuilder(
@@ -680,6 +680,10 @@ class _AssignmentMarkingWorkspaceState
                     child: _AssignmentSubmissionFilePage(
                       item: widget.item,
                       annotations: _annotations,
+                      strokes: _strokes,
+                      drawingTool: _drawingTool,
+                      onStrokeStart: _startStroke,
+                      onStrokeUpdate: _appendStroke,
                     ),
                   ),
                   SizedBox(
@@ -710,6 +714,43 @@ class _AssignmentMarkingWorkspaceState
         ),
       );
     });
+  }
+
+  void _startStroke(Offset point) {
+    if (_drawingTool == _DrawingTool.none) {
+      return;
+    }
+    setState(() {
+      _strokes.add(
+        _InkStroke(
+          points: [point],
+          color: _inkColor,
+          strokeWidth: _inkSize,
+          tool: _drawingTool,
+        ),
+      );
+    });
+  }
+
+  void _appendStroke(Offset point) {
+    if (_drawingTool == _DrawingTool.none || _strokes.isEmpty) {
+      return;
+    }
+    setState(() => _strokes.last.points.add(point));
+  }
+
+  void _undoStroke() {
+    if (_strokes.isEmpty) {
+      return;
+    }
+    setState(() => _strokes.removeLast());
+  }
+
+  void _clearStrokes() {
+    if (_strokes.isEmpty) {
+      return;
+    }
+    setState(_strokes.clear);
   }
 }
 
@@ -822,6 +863,31 @@ enum _AnnotationType {
   final String label;
 }
 
+enum _DrawingTool {
+  none('Move', Icons.pan_tool_alt_outlined),
+  pen('Pen', Icons.edit_outlined),
+  highlighter('Highlighter', Icons.brush_outlined);
+
+  const _DrawingTool(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class _InkStroke {
+  _InkStroke({
+    required this.points,
+    required this.color,
+    required this.strokeWidth,
+    required this.tool,
+  });
+
+  final List<Offset> points;
+  final Color color;
+  final double strokeWidth;
+  final _DrawingTool tool;
+}
+
 class _ScriptAnnotation {
   const _ScriptAnnotation({
     required this.line,
@@ -842,10 +908,18 @@ class _AssignmentSubmissionFilePage extends StatelessWidget {
   const _AssignmentSubmissionFilePage({
     required this.item,
     required this.annotations,
+    required this.strokes,
+    required this.drawingTool,
+    required this.onStrokeStart,
+    required this.onStrokeUpdate,
   });
 
   final _SubmissionReviewItem item;
   final List<_ScriptAnnotation> annotations;
+  final List<_InkStroke> strokes;
+  final _DrawingTool drawingTool;
+  final ValueChanged<Offset> onStrokeStart;
+  final ValueChanged<Offset> onStrokeUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -853,72 +927,78 @@ class _AssignmentSubmissionFilePage extends StatelessWidget {
     final fileName =
         '${item.courseCode.toLowerCase()}_${item.matricNo.replaceAll('/', '_')}.pdf';
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Column(
+    return _DrawableScriptSurface(
+      strokes: strokes,
+      drawingTool: drawingTool,
+      onStrokeStart: onStrokeStart,
+      onStrokeUpdate: onStrokeUpdate,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    'KADUNA STATE UNIVERSITY',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Distance Learning Centre - Assignment Submission File',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Text(
-                  'KADUNA STATE UNIVERSITY',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                _MiniPill(label: fileName),
+                _MiniPill(label: item.student),
+                _MiniPill(label: item.matricNo),
+                _MiniPill(label: item.courseCode),
+              ],
+            ),
+            const SizedBox(height: 16),
+            for (var i = 0; i < _assignmentSubmissionLines.length; i++)
+              _TranscriptLine(
+                lineNumber: i + 1,
+                text: _assignmentSubmissionLines[i],
+                annotations: annotations
+                    .where((annotation) => annotation.line == i + 1)
+                    .toList(),
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.open_in_new_outlined),
+                  label: const Text('Open sample file'),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Distance Learning Centre - Assignment Submission File',
-                  textAlign: TextAlign.center,
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.download_outlined),
+                  label: const Text('Download sample'),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MiniPill(label: fileName),
-              _MiniPill(label: item.student),
-              _MiniPill(label: item.matricNo),
-              _MiniPill(label: item.courseCode),
-            ],
-          ),
-          const SizedBox(height: 16),
-          for (var i = 0; i < _assignmentSubmissionLines.length; i++)
-            _TranscriptLine(
-              lineNumber: i + 1,
-              text: _assignmentSubmissionLines[i],
-              annotations: annotations
-                  .where((annotation) => annotation.line == i + 1)
-                  .toList(),
-            ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.open_in_new_outlined),
-                label: const Text('Open sample file'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Download sample'),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -943,6 +1023,13 @@ class _ExamScriptMarkingWorkspaceState
   int _selectedLine = 2;
   Color _inkColor = Colors.red;
   double _inkSize = 4;
+  _DrawingTool _drawingTool = _DrawingTool.pen;
+  final List<_InkStroke> _strokes = [];
+  late final List<_ExamQuestionMark> _assignmentMarks;
+  late final List<_ExamQuestionMark> _caMarks;
+  late final List<_ExamQuestionMark> _questionMarks;
+  late final TextEditingController _examinerSummaryController;
+  bool _submittedToExamOfficer = false;
   final List<_ScriptAnnotation> _annotations = const [
     _ScriptAnnotation(
       line: 2,
@@ -972,18 +1059,34 @@ class _ExamScriptMarkingWorkspaceState
   );
 
   @override
+  void initState() {
+    super.initState();
+    _assignmentMarks = _buildAssignmentMarks(widget.item);
+    _caMarks = _buildCaMarks(widget.item);
+    _questionMarks = _buildQuestionMarks(widget.item);
+    _examinerSummaryController = TextEditingController(text: widget.item.note);
+    for (final mark in [..._assignmentMarks, ..._caMarks, ..._questionMarks]) {
+      mark.controller.addListener(_refreshTotal);
+    }
+  }
+
+  @override
   void dispose() {
     _noteController.dispose();
+    _examinerSummaryController.dispose();
+    for (final mark in [..._assignmentMarks, ..._caMarks, ..._questionMarks]) {
+      mark.controller
+        ..removeListener(_refreshTotal)
+        ..dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final total =
-        widget.item.objectiveScore +
-        widget.item.theoryScore +
-        widget.item.practicalScore;
+    final total = _totalScore;
+    final maxTotal = _maxTotal;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1023,8 +1126,13 @@ class _ExamScriptMarkingWorkspaceState
               _MiniPill(label: widget.item.student),
               _MiniPill(label: widget.item.candidateNo),
               _MiniPill(label: widget.item.courseCode),
-              _MiniPill(label: 'Current total $total/${widget.item.maxScore}'),
+              _MiniPill(label: 'Current total $total/$maxTotal'),
               _MiniPill(label: 'Read-only transcript'),
+              _MiniPill(
+                label: _submittedToExamOfficer
+                    ? 'Submitted to Exam Officer'
+                    : 'Draft marking',
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1032,18 +1140,168 @@ class _ExamScriptMarkingWorkspaceState
             selectedLine: _selectedLine,
             inkColor: _inkColor,
             inkSize: _inkSize,
+            drawingTool: _drawingTool,
             noteController: _noteController,
             lineCount: _examTranscriptLines.length,
             onLineChanged: (value) => setState(() => _selectedLine = value),
             onInkChanged: (value) => setState(() => _inkColor = value),
             onInkSizeChanged: (value) => setState(() => _inkSize = value),
+            onDrawingToolChanged: (value) =>
+                setState(() => _drawingTool = value),
             onAddAnnotation: _addAnnotation,
+            onUndoStroke: _undoStroke,
+            onClearStrokes: _clearStrokes,
           ),
           const SizedBox(height: 14),
-          _ExamTranscriptPage(item: widget.item, annotations: _annotations),
+          _ExamTranscriptPage(
+            item: widget.item,
+            annotations: _annotations,
+            strokes: _strokes,
+            drawingTool: _drawingTool,
+            onStrokeStart: _startStroke,
+            onStrokeUpdate: _appendStroke,
+          ),
           const SizedBox(height: 14),
-          _ExamScoreSummary(item: widget.item, total: total),
+          _ExamScoreSummary(
+            item: widget.item,
+            assignmentMarks: _assignmentMarks,
+            caMarks: _caMarks,
+            questionMarks: _questionMarks,
+            assignmentTotal: _assignmentTotal,
+            assignmentMaxTotal: _assignmentMaxTotal,
+            caTotal: _caTotal,
+            caMaxTotal: _caMaxTotal,
+            total: total,
+            maxTotal: maxTotal,
+            summaryController: _examinerSummaryController,
+            submittedToExamOfficer: _submittedToExamOfficer,
+            onSubmitToExamOfficer: _submitToExamOfficer,
+          ),
         ],
+      ),
+    );
+  }
+
+  int get _assignmentTotal => _assignmentMarks.fold(
+    0,
+    (total, mark) => total + _parseMark(mark.controller.text, mark.maxMark),
+  );
+
+  int get _assignmentMaxTotal =>
+      _assignmentMarks.fold(0, (total, mark) => total + mark.maxMark);
+
+  int get _caOnlyTotal => _caMarks.fold(
+    0,
+    (total, mark) => total + _parseMark(mark.controller.text, mark.maxMark),
+  );
+
+  int get _caOnlyMaxTotal =>
+      _caMarks.fold(0, (total, mark) => total + mark.maxMark);
+
+  int get _caTotal => _assignmentTotal + _caOnlyTotal;
+
+  int get _caMaxTotal => _assignmentMaxTotal + _caOnlyMaxTotal;
+
+  int get _totalScore => _questionMarks.fold(
+    0,
+    (total, mark) => total + _parseMark(mark.controller.text, mark.maxMark),
+  );
+
+  int get _maxTotal =>
+      _questionMarks.fold(0, (total, mark) => total + mark.maxMark);
+
+  List<_ExamQuestionMark> _buildAssignmentMarks(_ExamMarkingSample item) {
+    return [
+      _ExamQuestionMark(
+        question: 'Assignment 1',
+        maxMark: 10,
+        controller: TextEditingController(
+          text: item.courseCode == 'CSC 305' ? '8' : '7',
+        ),
+      ),
+      _ExamQuestionMark(
+        question: 'Assignment 2',
+        maxMark: 10,
+        controller: TextEditingController(
+          text: item.courseCode == 'CSC 305' ? '7' : '8',
+        ),
+      ),
+    ];
+  }
+
+  List<_ExamQuestionMark> _buildCaMarks(_ExamMarkingSample item) {
+    return [
+      _ExamQuestionMark(
+        question: 'Quiz / Test',
+        maxMark: 5,
+        controller: TextEditingController(
+          text: item.status == 'Marked' ? '4' : '3',
+        ),
+      ),
+      _ExamQuestionMark(
+        question: 'Attendance / Engagement',
+        maxMark: 5,
+        controller: TextEditingController(text: '4'),
+      ),
+      _ExamQuestionMark(
+        question: 'Practical / Lab CA',
+        maxMark: 10,
+        controller: TextEditingController(
+          text: item.practicalScore > 0 ? '8' : '0',
+        ),
+      ),
+    ];
+  }
+
+  List<_ExamQuestionMark> _buildQuestionMarks(_ExamMarkingSample item) {
+    final manualTotal = item.theoryScore + item.practicalScore;
+    final q1 = (manualTotal * 0.34).round().clamp(0, 20);
+    final q2 = (manualTotal * 0.33).round().clamp(0, 20);
+    final q3 = (manualTotal - q1 - q2).clamp(0, 20);
+
+    return [
+      _ExamQuestionMark(
+        question: 'Objective CBT',
+        maxMark: 40,
+        controller: TextEditingController(text: '${item.objectiveScore}'),
+        readOnly: true,
+      ),
+      _ExamQuestionMark(
+        question: 'Question 1 - data structure explanation',
+        maxMark: 20,
+        controller: TextEditingController(text: '$q1'),
+      ),
+      _ExamQuestionMark(
+        question: 'Question 2 - binary search tree',
+        maxMark: 20,
+        controller: TextEditingController(text: '$q2'),
+      ),
+      _ExamQuestionMark(
+        question: 'Question 3 - graph traversal application',
+        maxMark: 20,
+        controller: TextEditingController(text: '$q3'),
+      ),
+    ];
+  }
+
+  int _parseMark(String value, int maxMark) {
+    final parsed = int.tryParse(value.trim()) ?? 0;
+    return parsed.clamp(0, maxMark);
+  }
+
+  void _refreshTotal() {
+    if (mounted) {
+      setState(() => _submittedToExamOfficer = false);
+    }
+  }
+
+  void _submitToExamOfficer() {
+    setState(() => _submittedToExamOfficer = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Marked script for ${widget.item.candidateNo} submitted to Exam Officer with CA $_caTotal/$_caMaxTotal and exam $_totalScore/$_maxTotal.',
+        ),
       ),
     );
   }
@@ -1062,6 +1320,43 @@ class _ExamScriptMarkingWorkspaceState
       );
     });
   }
+
+  void _startStroke(Offset point) {
+    if (_drawingTool == _DrawingTool.none) {
+      return;
+    }
+    setState(() {
+      _strokes.add(
+        _InkStroke(
+          points: [point],
+          color: _inkColor,
+          strokeWidth: _inkSize,
+          tool: _drawingTool,
+        ),
+      );
+    });
+  }
+
+  void _appendStroke(Offset point) {
+    if (_drawingTool == _DrawingTool.none || _strokes.isEmpty) {
+      return;
+    }
+    setState(() => _strokes.last.points.add(point));
+  }
+
+  void _undoStroke() {
+    if (_strokes.isEmpty) {
+      return;
+    }
+    setState(() => _strokes.removeLast());
+  }
+
+  void _clearStrokes() {
+    if (_strokes.isEmpty) {
+      return;
+    }
+    setState(_strokes.clear);
+  }
 }
 
 class _AnnotationToolbar extends StatelessWidget {
@@ -1069,23 +1364,31 @@ class _AnnotationToolbar extends StatelessWidget {
     required this.selectedLine,
     required this.inkColor,
     required this.inkSize,
+    required this.drawingTool,
     required this.noteController,
     required this.lineCount,
     required this.onLineChanged,
     required this.onInkChanged,
     required this.onInkSizeChanged,
+    required this.onDrawingToolChanged,
     required this.onAddAnnotation,
+    required this.onUndoStroke,
+    required this.onClearStrokes,
   });
 
   final int selectedLine;
   final Color inkColor;
   final double inkSize;
+  final _DrawingTool drawingTool;
   final TextEditingController noteController;
   final int lineCount;
   final ValueChanged<int> onLineChanged;
   final ValueChanged<Color> onInkChanged;
   final ValueChanged<double> onInkSizeChanged;
+  final ValueChanged<_DrawingTool> onDrawingToolChanged;
   final ValueChanged<_AnnotationType> onAddAnnotation;
+  final VoidCallback onUndoStroke;
+  final VoidCallback onClearStrokes;
 
   @override
   Widget build(BuildContext context) {
@@ -1165,6 +1468,23 @@ class _AnnotationToolbar extends StatelessWidget {
                 ],
               ),
             ),
+            SizedBox(
+              width: 410,
+              child: SegmentedButton<_DrawingTool>(
+                selected: {drawingTool},
+                showSelectedIcon: false,
+                segments: [
+                  for (final tool in _DrawingTool.values)
+                    ButtonSegment(
+                      value: tool,
+                      icon: Icon(tool.icon),
+                      label: Text(tool.label),
+                    ),
+                ],
+                onSelectionChanged: (selection) =>
+                    onDrawingToolChanged(selection.first),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -1201,9 +1521,21 @@ class _AnnotationToolbar extends StatelessWidget {
               label: const Text('Add note'),
             ),
             FilledButton.icon(
-              onPressed: () => onAddAnnotation(_AnnotationType.inkMark),
+              onPressed: drawingTool == _DrawingTool.none
+                  ? () => onDrawingToolChanged(_DrawingTool.pen)
+                  : null,
               icon: const Icon(Icons.gesture_outlined),
-              label: const Text('Add ink mark'),
+              label: const Text('Draw on script'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onUndoStroke,
+              icon: const Icon(Icons.undo_outlined),
+              label: const Text('Undo ink'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onClearStrokes,
+              icon: const Icon(Icons.layers_clear_outlined),
+              label: const Text('Clear ink'),
             ),
           ],
         ),
@@ -1213,65 +1545,187 @@ class _AnnotationToolbar extends StatelessWidget {
 }
 
 class _ExamTranscriptPage extends StatelessWidget {
-  const _ExamTranscriptPage({required this.item, required this.annotations});
+  const _ExamTranscriptPage({
+    required this.item,
+    required this.annotations,
+    required this.strokes,
+    required this.drawingTool,
+    required this.onStrokeStart,
+    required this.onStrokeUpdate,
+  });
 
   final _ExamMarkingSample item;
   final List<_ScriptAnnotation> annotations;
+  final List<_InkStroke> strokes;
+  final _DrawingTool drawingTool;
+  final ValueChanged<Offset> onStrokeStart;
+  final ValueChanged<Offset> onStrokeUpdate;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Column(
+    return _DrawableScriptSurface(
+      strokes: strokes,
+      drawingTool: drawingTool,
+      onStrokeStart: onStrokeStart,
+      onStrokeUpdate: onStrokeUpdate,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    'KADUNA STATE UNIVERSITY',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Distance Learning Centre - Examination Transcript',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Text(
-                  'KADUNA STATE UNIVERSITY',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Distance Learning Centre - Examination Transcript',
-                  textAlign: TextAlign.center,
-                ),
+                _MiniPill(label: item.examTitle),
+                _MiniPill(label: item.courseCode),
+                _MiniPill(label: item.candidateNo),
+                _MiniPill(label: item.student),
               ],
             ),
+            const SizedBox(height: 14),
+            for (var i = 0; i < _examTranscriptLines.length; i++)
+              _TranscriptLine(
+                lineNumber: i + 1,
+                text: _examTranscriptLines[i],
+                annotations: annotations
+                    .where((annotation) => annotation.line == i + 1)
+                    .toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawableScriptSurface extends StatelessWidget {
+  const _DrawableScriptSurface({
+    required this.child,
+    required this.strokes,
+    required this.drawingTool,
+    required this.onStrokeStart,
+    required this.onStrokeUpdate,
+  });
+
+  final Widget child;
+  final List<_InkStroke> strokes;
+  final _DrawingTool drawingTool;
+  final ValueChanged<Offset> onStrokeStart;
+  final ValueChanged<Offset> onStrokeUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    final drawingEnabled = drawingTool != _DrawingTool.none;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Stack(
+        children: [
+          child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(painter: _InkStrokePainter(strokes)),
+            ),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MiniPill(label: item.examTitle),
-              _MiniPill(label: item.courseCode),
-              _MiniPill(label: item.candidateNo),
-              _MiniPill(label: item.student),
-            ],
-          ),
-          const SizedBox(height: 14),
-          for (var i = 0; i < _examTranscriptLines.length; i++)
-            _TranscriptLine(
-              lineNumber: i + 1,
-              text: _examTranscriptLines[i],
-              annotations: annotations
-                  .where((annotation) => annotation.line == i + 1)
-                  .toList(),
+          if (drawingEnabled)
+            Positioned.fill(
+              child: MouseRegion(
+                cursor: SystemMouseCursors.precise,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: (details) => onStrokeStart(details.localPosition),
+                  onPanUpdate: (details) =>
+                      onStrokeUpdate(details.localPosition),
+                ),
+              ),
             ),
         ],
       ),
     );
+  }
+}
+
+class _InkStrokePainter extends CustomPainter {
+  const _InkStrokePainter(this.strokes);
+
+  final List<_InkStroke> strokes;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final stroke in strokes) {
+      if (stroke.points.isEmpty) {
+        continue;
+      }
+
+      final paint = Paint()
+        ..color = stroke.tool == _DrawingTool.highlighter
+            ? stroke.color.withValues(alpha: 0.32)
+            : stroke.color
+        ..strokeWidth = stroke.tool == _DrawingTool.highlighter
+            ? stroke.strokeWidth * 3
+            : stroke.strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      if (stroke.points.length == 1) {
+        canvas.drawCircle(
+          stroke.points.first,
+          paint.strokeWidth / 2,
+          paint..style = PaintingStyle.fill,
+        );
+        continue;
+      }
+
+      final path = Path()
+        ..moveTo(stroke.points.first.dx, stroke.points.first.dy);
+      for (var i = 1; i < stroke.points.length; i++) {
+        final current = stroke.points[i];
+        final previous = stroke.points[i - 1];
+        final midpoint = Offset(
+          (previous.dx + current.dx) / 2,
+          (previous.dy + current.dy) / 2,
+        );
+        path.quadraticBezierTo(
+          previous.dx,
+          previous.dy,
+          midpoint.dx,
+          midpoint.dy,
+        );
+      }
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _InkStrokePainter oldDelegate) {
+    return true;
   }
 }
 
@@ -1437,18 +1891,44 @@ class _AnnotationChip extends StatelessWidget {
 }
 
 class _ExamScoreSummary extends StatelessWidget {
-  const _ExamScoreSummary({required this.item, required this.total});
+  const _ExamScoreSummary({
+    required this.item,
+    required this.assignmentMarks,
+    required this.caMarks,
+    required this.questionMarks,
+    required this.assignmentTotal,
+    required this.assignmentMaxTotal,
+    required this.caTotal,
+    required this.caMaxTotal,
+    required this.total,
+    required this.maxTotal,
+    required this.summaryController,
+    required this.submittedToExamOfficer,
+    required this.onSubmitToExamOfficer,
+  });
 
   final _ExamMarkingSample item;
+  final List<_ExamQuestionMark> assignmentMarks;
+  final List<_ExamQuestionMark> caMarks;
+  final List<_ExamQuestionMark> questionMarks;
+  final int assignmentTotal;
+  final int assignmentMaxTotal;
+  final int caTotal;
+  final int caMaxTotal;
   final int total;
+  final int maxTotal;
+  final TextEditingController summaryController;
+  final bool submittedToExamOfficer;
+  final VoidCallback onSubmitToExamOfficer;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Score confirmation',
+          'Question marks and exam officer submission',
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -1458,20 +1938,91 @@ class _ExamScoreSummary extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _MiniPill(label: 'Objective ${item.objectiveScore}'),
-            _MiniPill(label: 'Theory ${item.theoryScore}'),
-            _MiniPill(label: 'Practical ${item.practicalScore}'),
-            _MiniPill(label: 'Total $total/${item.maxScore}'),
+            _MiniPill(label: 'Candidate ${item.candidateNo}'),
+            _MiniPill(
+              label: 'Assignments $assignmentTotal/$assignmentMaxTotal',
+            ),
+            _MiniPill(label: 'CA $caTotal/$caMaxTotal'),
+            _MiniPill(label: 'Exam $total/$maxTotal'),
             _MiniPill(label: item.markingGuide),
+            _MiniPill(
+              label: submittedToExamOfficer
+                  ? 'Sent to Exam Officer'
+                  : 'Not yet submitted',
+            ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+        _MarkEntryGroup(title: 'Assignment marks', marks: assignmentMarks),
+        const SizedBox(height: 12),
+        _MarkEntryGroup(title: 'Other CA marks', marks: caMarks),
+        const SizedBox(height: 12),
+        _MarkEntryGroup(
+          title: 'Examination question marks',
+          marks: questionMarks,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: scheme.secondaryContainer.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: scheme.secondary.withValues(alpha: 0.28)),
+          ),
+          child: Wrap(
+            spacing: 18,
+            runSpacing: 8,
+            children: [
+              _SummaryTotal(
+                icon: Icons.assignment_turned_in_outlined,
+                label: 'Assignment total',
+                value: '$assignmentTotal/$assignmentMaxTotal',
+              ),
+              _SummaryTotal(
+                icon: Icons.fact_check_outlined,
+                label: 'CA total',
+                value: '$caTotal/$caMaxTotal',
+              ),
+              _SummaryTotal(
+                icon: Icons.description_outlined,
+                label: 'Exam total',
+                value: '$total/$maxTotal',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: scheme.primary.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.calculate_outlined, color: scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Exam Officer package: CA $caTotal/$caMaxTotal plus examination script $total/$maxTotal',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         TextFormField(
-          initialValue: item.note,
+          controller: summaryController,
           minLines: 2,
           maxLines: 4,
           decoration: const InputDecoration(
-            labelText: 'Examiner summary comment',
+            labelText: 'Lecturer marking summary for Exam Officer',
             prefixIcon: Icon(Icons.comment_outlined),
           ),
         ),
@@ -1486,15 +2037,111 @@ class _ExamScoreSummary extends StatelessWidget {
               label: const Text('Save annotations'),
             ),
             FilledButton.icon(
-              onPressed: () {},
+              onPressed: onSubmitToExamOfficer,
               icon: const Icon(Icons.publish_outlined),
-              label: const Text('Submit marked script'),
+              label: const Text('Submit to Exam Officer'),
             ),
           ],
         ),
       ],
     );
   }
+}
+
+class _MarkEntryGroup extends StatelessWidget {
+  const _MarkEntryGroup({required this.title, required this.marks});
+
+  final String title;
+  final List<_ExamQuestionMark> marks;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [for (final mark in marks) _MarkEntryField(mark: mark)],
+        ),
+      ],
+    );
+  }
+}
+
+class _MarkEntryField extends StatelessWidget {
+  const _MarkEntryField({required this.mark});
+
+  final _ExamQuestionMark mark;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      child: TextFormField(
+        controller: mark.controller,
+        readOnly: mark.readOnly,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: '${mark.question} / ${mark.maxMark}',
+          helperText: mark.readOnly ? 'Auto-marked' : 'Lecturer recorded mark',
+          prefixIcon: Icon(
+            mark.readOnly ? Icons.verified_outlined : Icons.edit_note_outlined,
+          ),
+          suffixText: '/ ${mark.maxMark}',
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryTotal extends StatelessWidget {
+  const _SummaryTotal({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: scheme.secondary),
+        const SizedBox(width: 8),
+        Text(
+          '$label: $value',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExamQuestionMark {
+  const _ExamQuestionMark({
+    required this.question,
+    required this.maxMark,
+    required this.controller,
+    this.readOnly = false,
+  });
+
+  final String question;
+  final int maxMark;
+  final TextEditingController controller;
+  final bool readOnly;
 }
 
 class _ScoreFields extends StatelessWidget {

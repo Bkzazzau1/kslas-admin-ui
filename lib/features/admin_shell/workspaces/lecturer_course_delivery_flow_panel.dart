@@ -16,9 +16,30 @@ class _LecturerCourseDeliveryFlowPanelState
   String _materialType = 'Lecture notes';
   String _videoStatus = 'Draft';
   String _examQuestionType = 'Mixed';
+  String _cbtUploadFormat = 'Excel template';
   bool _allowLateSubmission = true;
   bool _autoMarkObjective = true;
   bool _requiresModerator = true;
+  final List<_QuestionDraftItem> _questionDrafts = [
+    _QuestionDraftItem(
+      number: 1,
+      type: 'Objective',
+      marks: '2',
+      topic: 'Stacks and queues',
+      question: 'Which data structure follows last-in-first-out order?',
+      answer: 'Stack',
+    ),
+    _QuestionDraftItem(
+      number: 2,
+      type: 'Essay',
+      marks: '20',
+      topic: 'Binary search trees',
+      question:
+          'Explain insertion and search operations in a binary search tree.',
+      answer:
+          'Compare at each node, branch left/right, discuss balanced tree cost.',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -440,6 +461,11 @@ class _LecturerCourseDeliveryFlowPanelState
           icon: const Icon(Icons.upload_file_outlined),
           label: const Text('Upload marking guide'),
         ),
+        OutlinedButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.dataset_outlined),
+          label: const Text('Upload CBT questions'),
+        ),
         FilledButton.icon(
           onPressed: () {},
           icon: const Icon(Icons.send_outlined),
@@ -496,13 +522,18 @@ class _LecturerCourseDeliveryFlowPanelState
           ],
         ),
         const SizedBox(height: 12),
-        const TextField(
-          minLines: 4,
-          maxLines: 7,
-          decoration: InputDecoration(
-            labelText: 'Question draft / correction notes',
-            prefixIcon: Icon(Icons.edit_note_outlined),
-          ),
+        _QuestionBuilder(
+          questions: _questionDrafts,
+          onAddQuestion: _addQuestionDraft,
+          onQuestionChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        _CbtUploadPanel(
+          uploadFormat: _cbtUploadFormat,
+          autoMarkObjective: _autoMarkObjective,
+          onFormatChanged: (value) => setState(() => _cbtUploadFormat = value),
+          onAutoMarkChanged: (value) =>
+              setState(() => _autoMarkObjective = value),
         ),
         const SizedBox(height: 8),
         SwitchListTile(
@@ -521,6 +552,21 @@ class _LecturerCourseDeliveryFlowPanelState
         ),
       ],
     );
+  }
+
+  void _addQuestionDraft() {
+    setState(() {
+      _questionDrafts.add(
+        _QuestionDraftItem(
+          number: _questionDrafts.length + 1,
+          type: _examQuestionType == 'Mixed' ? 'Essay' : _examQuestionType,
+          marks: '10',
+          topic: 'Course learning outcome',
+          question: '',
+          answer: '',
+        ),
+      );
+    });
   }
 
   Widget _settingsFlow() {
@@ -670,6 +716,298 @@ class _FieldShell extends StatelessWidget {
   }
 }
 
+class _QuestionBuilder extends StatelessWidget {
+  const _QuestionBuilder({
+    required this.questions,
+    required this.onAddQuestion,
+    required this.onQuestionChanged,
+  });
+
+  final List<_QuestionDraftItem> questions;
+  final VoidCallback onAddQuestion;
+  final VoidCallback onQuestionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalMarks = questions.fold<int>(
+      0,
+      (total, question) => total + (int.tryParse(question.marks) ?? 0),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              'Question-by-question builder',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            _MiniPill(label: '${questions.length} questions'),
+            _MiniPill(label: '$totalMarks marks drafted'),
+            OutlinedButton.icon(
+              onPressed: onAddQuestion,
+              icon: const Icon(Icons.add_outlined),
+              label: const Text('Add question'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (final question in questions) ...[
+          _QuestionDraftCard(question: question, onChanged: onQuestionChanged),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuestionDraftCard extends StatefulWidget {
+  const _QuestionDraftCard({required this.question, required this.onChanged});
+
+  final _QuestionDraftItem question;
+  final VoidCallback onChanged;
+
+  @override
+  State<_QuestionDraftCard> createState() => _QuestionDraftCardState();
+}
+
+class _QuestionDraftCardState extends State<_QuestionDraftCard> {
+  late String _type;
+  late String _marks;
+
+  @override
+  void initState() {
+    super.initState();
+    _type = widget.question.type;
+    _marks = widget.question.marks;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.32),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _FieldShell(
+                width: 180,
+                child: DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: _type,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Objective',
+                      child: Text('Objective'),
+                    ),
+                    DropdownMenuItem(value: 'Essay', child: Text('Essay')),
+                    DropdownMenuItem(
+                      value: 'Practical',
+                      child: Text('Practical'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Short answer',
+                      child: Text('Short answer'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _type = value ?? _type);
+                    widget.question.type = _type;
+                    widget.onChanged();
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Question ${widget.question.number} type',
+                  ),
+                ),
+              ),
+              _FieldShell(
+                width: 130,
+                child: TextFormField(
+                  initialValue: _marks,
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    setState(() => _marks = value);
+                    widget.question.marks = value;
+                    widget.onChanged();
+                  },
+                  decoration: const InputDecoration(labelText: 'Marks'),
+                ),
+              ),
+              _FieldShell(
+                width: 240,
+                child: TextFormField(
+                  initialValue: widget.question.topic,
+                  onChanged: (value) {
+                    widget.question.topic = value;
+                    widget.onChanged();
+                  },
+                  decoration: const InputDecoration(labelText: 'Topic / CLO'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            initialValue: widget.question.question,
+            minLines: 2,
+            maxLines: 4,
+            onChanged: (value) {
+              widget.question.question = value;
+              widget.onChanged();
+            },
+            decoration: const InputDecoration(
+              labelText: 'Question text',
+              prefixIcon: Icon(Icons.help_outline),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            initialValue: widget.question.answer,
+            minLines: 2,
+            maxLines: 4,
+            onChanged: (value) {
+              widget.question.answer = value;
+              widget.onChanged();
+            },
+            decoration: InputDecoration(
+              labelText: _type == 'Objective'
+                  ? 'Correct option / answer key'
+                  : 'Marking guide / expected answer',
+              prefixIcon: const Icon(Icons.rule_outlined),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CbtUploadPanel extends StatelessWidget {
+  const _CbtUploadPanel({
+    required this.uploadFormat,
+    required this.autoMarkObjective,
+    required this.onFormatChanged,
+    required this.onAutoMarkChanged,
+  });
+
+  final String uploadFormat;
+  final bool autoMarkObjective;
+  final ValueChanged<String> onFormatChanged;
+  final ValueChanged<bool> onAutoMarkChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.28)),
+        color: scheme.primaryContainer.withValues(alpha: 0.12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(Icons.computer_outlined, color: scheme.primary),
+              Text(
+                'Separate CBT question upload',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              _MiniPill(label: 'Objective bank'),
+              _MiniPill(label: 'Auto-mark keys'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _FieldShell(
+                width: 240,
+                child: DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: uploadFormat,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Excel template',
+                      child: Text('Excel template'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'CSV bank',
+                      child: Text('CSV bank'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'QTI package',
+                      child: Text('QTI package'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Manual paste',
+                      child: Text('Manual paste'),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      onFormatChanged(value ?? 'Excel template'),
+                  decoration: const InputDecoration(labelText: 'CBT format'),
+                ),
+              ),
+              const _FieldShell(
+                width: 260,
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: 'CBT file / question bank',
+                    prefixIcon: Icon(Icons.attach_file_outlined),
+                  ),
+                ),
+              ),
+              const _FieldShell(
+                width: 220,
+                child: TextField(
+                  decoration: InputDecoration(labelText: 'Question count'),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.upload_file_outlined),
+                label: const Text('Upload CBT bank'),
+              ),
+            ],
+          ),
+          SwitchListTile(
+            value: autoMarkObjective,
+            onChanged: (value) => onAutoMarkChanged(value),
+            title: const Text(
+              'Auto-mark CBT objective questions using answer keys',
+            ),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExistingItemList extends StatelessWidget {
   const _ExistingItemList({required this.title, required this.items});
 
@@ -736,4 +1074,22 @@ class _MiniPill extends StatelessWidget {
       ),
     );
   }
+}
+
+class _QuestionDraftItem {
+  _QuestionDraftItem({
+    required this.number,
+    required this.type,
+    required this.marks,
+    required this.question,
+    required this.answer,
+    this.topic = 'Course learning outcome',
+  });
+
+  final int number;
+  String type;
+  String marks;
+  String question;
+  String answer;
+  String topic;
 }
