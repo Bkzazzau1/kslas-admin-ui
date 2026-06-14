@@ -22,7 +22,8 @@ class CourseRegistrationApprovalPanel extends StatelessWidget {
       credits: 19,
       carryovers: 1,
       status: 'Submitted',
-      issue: 'Carryover selected from released record. Awaiting records confirmation.',
+      issue:
+          'Carryover selected from released record. Awaiting records confirmation.',
     ),
     _RegistrationRequest(
       student: 'Blessing John',
@@ -53,8 +54,8 @@ class CourseRegistrationApprovalPanel extends StatelessWidget {
                   child: Text(
                     'Course Registration Approval',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 FilledButton.icon(
@@ -69,14 +70,27 @@ class CourseRegistrationApprovalPanel extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: const [
-                _ApprovalChip(label: 'Pending: 31', icon: Icons.pending_actions_outlined),
-                _ApprovalChip(label: 'Carryover review: 14', icon: Icons.replay_circle_filled_outlined),
-                _ApprovalChip(label: 'Overload waiver: 6', icon: Icons.warning_amber_outlined),
-                _ApprovalChip(label: 'Ready to approve: 11', icon: Icons.verified_outlined),
+                _ApprovalChip(
+                  label: 'Pending: 31',
+                  icon: Icons.pending_actions_outlined,
+                ),
+                _ApprovalChip(
+                  label: 'Carryover review: 14',
+                  icon: Icons.replay_circle_filled_outlined,
+                ),
+                _ApprovalChip(
+                  label: 'Overload waiver: 6',
+                  icon: Icons.warning_amber_outlined,
+                ),
+                _ApprovalChip(
+                  label: 'Ready to approve: 11',
+                  icon: Icons.verified_outlined,
+                ),
               ],
             ),
             const SizedBox(height: 18),
-            for (final request in _requests) _RegistrationRequestTile(request: request),
+            for (final request in _requests)
+              _RegistrationRequestTile(request: request),
           ],
         ),
       ),
@@ -95,8 +109,8 @@ class _RegistrationRequestTile extends StatelessWidget {
     final statusColor = request.status == 'Overload'
         ? scheme.error
         : request.status == 'Carryover Review'
-            ? scheme.secondary
-            : scheme.primary;
+        ? scheme.secondary
+        : scheme.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -131,32 +145,40 @@ class _RegistrationRequestTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            _MiniPill(label: '${request.credits} credits'),
-            _MiniPill(label: '${request.carryovers} carryover/repeat'),
-            _MiniPill(label: 'Core checked'),
-            _MiniPill(label: 'Electives checked'),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: '${request.credits} credits'),
+              _MiniPill(label: '${request.carryovers} carryover/repeat'),
+              _MiniPill(label: 'Core checked'),
+              _MiniPill(label: 'Electives checked'),
+            ],
+          ),
           const SizedBox(height: 10),
           Text(request.issue, style: TextStyle(color: scheme.onSurfaceVariant)),
           const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.visibility_outlined),
-              label: const Text('Review'),
-            ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('Approve'),
-            ),
-            TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.close_outlined),
-              label: const Text('Reject'),
-            ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.visibility_outlined),
+                label: const Text('Review'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Approve'),
+              ),
+              TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.close_outlined),
+                label: const Text('Reject'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -171,10 +193,7 @@ class _ApprovalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-    );
+    return Chip(avatar: Icon(icon, size: 18), label: Text(label));
   }
 }
 
@@ -193,7 +212,10 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }

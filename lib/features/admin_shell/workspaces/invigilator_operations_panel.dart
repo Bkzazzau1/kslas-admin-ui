@@ -4,10 +4,12 @@ class InvigilatorOperationsPanel extends StatefulWidget {
   const InvigilatorOperationsPanel({super.key});
 
   @override
-  State<InvigilatorOperationsPanel> createState() => _InvigilatorOperationsPanelState();
+  State<InvigilatorOperationsPanel> createState() =>
+      _InvigilatorOperationsPanelState();
 }
 
-class _InvigilatorOperationsPanelState extends State<InvigilatorOperationsPanel> {
+class _InvigilatorOperationsPanelState
+    extends State<InvigilatorOperationsPanel> {
   String _selectedRoom = 'All';
   String _selectedStatus = 'All';
 
@@ -94,83 +96,144 @@ class _InvigilatorOperationsPanelState extends State<InvigilatorOperationsPanel>
     final scheme = Theme.of(context).colorScheme;
     final filteredRooms = _rooms
         .where((room) => _selectedRoom == 'All' || room.room == _selectedRoom)
-        .where((room) => _selectedStatus == 'All' || room.status == _selectedStatus)
+        .where(
+          (room) => _selectedStatus == 'All' || room.status == _selectedStatus,
+        )
         .toList();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.supervisor_account_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Invigilator Operations',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.supervisor_account_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Invigilator Operations',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Close session'),
+                ),
+              ],
             ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.fact_check_outlined),
-              label: const Text('Close session'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _OpsChip(
+                  label: 'Active rooms: 18',
+                  icon: Icons.meeting_room_outlined,
+                ),
+                _OpsChip(
+                  label: 'Checked in: 2,418',
+                  icon: Icons.how_to_reg_outlined,
+                ),
+                _OpsChip(
+                  label: 'App ID issues: 11',
+                  icon: Icons.app_blocking_outlined,
+                ),
+                _OpsChip(
+                  label: 'Open incidents: 8',
+                  icon: Icons.report_problem_outlined,
+                ),
+                _OpsChip(
+                  label: 'Sessions closing: 4',
+                  icon: Icons.task_alt_outlined,
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: const [
-            _OpsChip(label: 'Active rooms: 18', icon: Icons.meeting_room_outlined),
-            _OpsChip(label: 'Checked in: 2,418', icon: Icons.how_to_reg_outlined),
-            _OpsChip(label: 'App ID issues: 11', icon: Icons.app_blocking_outlined),
-            _OpsChip(label: 'Open incidents: 8', icon: Icons.report_problem_outlined),
-            _OpsChip(label: 'Sessions closing: 4', icon: Icons.task_alt_outlined),
-          ]),
-          const SizedBox(height: 16),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(
-              width: 250,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedRoom,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All rooms')),
-                  DropdownMenuItem(value: 'ICT Lab A', child: Text('ICT Lab A')),
-                  DropdownMenuItem(value: 'CBT Centre 1', child: Text('CBT Centre 1')),
-                  DropdownMenuItem(value: 'Online Proctored Group A', child: Text('Online Proctored Group A')),
-                  DropdownMenuItem(value: 'Lab B', child: Text('Lab B')),
-                ],
-                onChanged: (value) => setState(() => _selectedRoom = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Room / group'),
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 250,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedRoom,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All rooms')),
+                      DropdownMenuItem(
+                        value: 'ICT Lab A',
+                        child: Text('ICT Lab A'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CBT Centre 1',
+                        child: Text('CBT Centre 1'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Online Proctored Group A',
+                        child: Text('Online Proctored Group A'),
+                      ),
+                      DropdownMenuItem(value: 'Lab B', child: Text('Lab B')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedRoom = value ?? 'All'),
+                    decoration: const InputDecoration(
+                      labelText: 'Room / group',
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedStatus,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All statuses'),
+                      ),
+                      DropdownMenuItem(value: 'Ready', child: Text('Ready')),
+                      DropdownMenuItem(
+                        value: 'Monitoring',
+                        child: Text('Monitoring'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Attention',
+                        child: Text('Attention'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedStatus = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Room status'),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedStatus,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All statuses')),
-                  DropdownMenuItem(value: 'Ready', child: Text('Ready')),
-                  DropdownMenuItem(value: 'Monitoring', child: Text('Monitoring')),
-                  DropdownMenuItem(value: 'Attention', child: Text('Attention')),
-                ],
-                onChanged: (value) => setState(() => _selectedStatus = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Room status'),
-              ),
+            const SizedBox(height: 18),
+            Text(
+              'Room operations',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-          ]),
-          const SizedBox(height: 18),
-          Text(
-            'Room operations',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final room in filteredRooms) _ExamRoomTile(room: room),
-          const SizedBox(height: 18),
-          Text(
-            'Incident reports',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final incident in _incidents) _IncidentTile(incident: incident),
-        ]),
+            const SizedBox(height: 10),
+            for (final room in filteredRooms) _ExamRoomTile(room: room),
+            const SizedBox(height: 18),
+            Text(
+              'Incident reports',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final incident in _incidents)
+              _IncidentTile(incident: incident),
+          ],
+        ),
       ),
     );
   }
@@ -187,66 +250,104 @@ class _ExamRoomTile extends StatelessWidget {
     final statusColor = room.status == 'Attention'
         ? scheme.error
         : room.status == 'Monitoring'
-            ? scheme.secondary
-            : scheme.primary;
-    final checkInPercent = room.candidates == 0 ? 0.0 : room.checkedIn / room.candidates;
+        ? scheme.secondary
+        : scheme.primary;
+    final checkInPercent = room.candidates == 0
+        ? 0.0
+        : room.checkedIn / room.candidates;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: room.status == 'Attention' ? scheme.error.withValues(alpha: 0.4) : scheme.outlineVariant),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${room.room} • ${room.exam}', style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text(room.mode, style: TextStyle(color: scheme.onSurfaceVariant)),
-            ]),
-          ),
-          _StatusBadge(text: room.status, color: statusColor),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: '${room.checkedIn}/${room.candidates} checked in'),
-          _MiniPill(label: '${room.onlineDevices}/${room.workstations} devices online'),
-          _MiniPill(label: '${room.whitelistedApps} app IDs ok'),
-          _MiniPill(label: '${room.incidents} incidents'),
-        ]),
-        const SizedBox(height: 12),
-        LinearProgressIndicator(
-          value: checkInPercent,
-          minHeight: 6,
-          borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: room.status == 'Attention'
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
         ),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.how_to_reg_outlined),
-            label: const Text('Check-in'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${room.room} • ${room.exam}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      room.mode,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: room.status, color: statusColor),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.desktop_windows_outlined),
-            label: const Text('Workstations'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(
+                label: '${room.checkedIn}/${room.candidates} checked in',
+              ),
+              _MiniPill(
+                label:
+                    '${room.onlineDevices}/${room.workstations} devices online',
+              ),
+              _MiniPill(label: '${room.whitelistedApps} app IDs ok'),
+              _MiniPill(label: '${room.incidents} incidents'),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.report_outlined),
-            label: const Text('Report incident'),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: checkInPercent,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(999),
           ),
-          FilledButton.icon(
-            onPressed: room.status == 'Ready' || room.status == 'Monitoring' ? () {} : null,
-            icon: const Icon(Icons.task_alt_outlined),
-            label: const Text('Close room'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.how_to_reg_outlined),
+                label: const Text('Check-in'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.desktop_windows_outlined),
+                label: const Text('Workstations'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.report_outlined),
+                label: const Text('Report incident'),
+              ),
+              FilledButton.icon(
+                onPressed: room.status == 'Ready' || room.status == 'Monitoring'
+                    ? () {}
+                    : null,
+                icon: const Icon(Icons.task_alt_outlined),
+                label: const Text('Close room'),
+              ),
+            ],
           ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -262,8 +363,8 @@ class _IncidentTile extends StatelessWidget {
     final severityColor = incident.severity == 'High'
         ? scheme.error
         : incident.severity == 'Medium'
-            ? scheme.secondary
-            : scheme.primary;
+        ? scheme.secondary
+        : scheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -271,8 +372,13 @@ class _IncidentTile extends StatelessWidget {
         foregroundColor: severityColor,
         child: const Icon(Icons.warning_amber_outlined),
       ),
-      title: Text('${incident.candidate} • ${incident.type}', style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text('${incident.room} • ${incident.status} • ${incident.time}'),
+      title: Text(
+        '${incident.candidate} • ${incident.type}',
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      subtitle: Text(
+        '${incident.room} • ${incident.status} • ${incident.time}',
+      ),
       trailing: _StatusBadge(text: incident.severity, color: severityColor),
     );
   }
@@ -299,10 +405,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -317,7 +429,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),

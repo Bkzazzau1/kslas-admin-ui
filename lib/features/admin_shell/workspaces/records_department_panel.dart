@@ -11,7 +11,8 @@ class RecordsDepartmentPanel extends StatelessWidget {
       cohort: '2023 Regular • 300 Level',
       cgpa: '4.18',
       status: 'Carryover check',
-      issue: 'CSC 209 repeat record must be linked before transcript preview is locked.',
+      issue:
+          'CSC 209 repeat record must be linked before transcript preview is locked.',
     ),
     _StudentRecord(
       name: 'Aisha Musa',
@@ -50,8 +51,8 @@ class RecordsDepartmentPanel extends StatelessWidget {
                   child: Text(
                     'Records Department',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 FilledButton.icon(
@@ -66,10 +67,22 @@ class RecordsDepartmentPanel extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: const [
-                _RecordChip(label: 'Student profiles: 18,420', icon: Icons.person_outline),
-                _RecordChip(label: 'Active cohorts: 62', icon: Icons.groups_2_outlined),
-                _RecordChip(label: 'CGPA reviews: 74', icon: Icons.workspace_premium_outlined),
-                _RecordChip(label: 'Missing results: 18', icon: Icons.report_problem_outlined),
+                _RecordChip(
+                  label: 'Student profiles: 18,420',
+                  icon: Icons.person_outline,
+                ),
+                _RecordChip(
+                  label: 'Active cohorts: 62',
+                  icon: Icons.groups_2_outlined,
+                ),
+                _RecordChip(
+                  label: 'CGPA reviews: 74',
+                  icon: Icons.workspace_premium_outlined,
+                ),
+                _RecordChip(
+                  label: 'Missing results: 18',
+                  icon: Icons.report_problem_outlined,
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -92,8 +105,8 @@ class _StudentRecordTile extends StatelessWidget {
     final statusColor = record.status == 'Ready'
         ? scheme.primary
         : record.status == 'Missing result'
-            ? scheme.error
-            : scheme.secondary;
+        ? scheme.error
+        : scheme.secondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -128,32 +141,40 @@ class _StudentRecordTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            _MiniPill(label: 'CGPA ${record.cgpa}'),
-            const _MiniPill(label: 'Completed courses checked'),
-            const _MiniPill(label: 'Cohort mapped'),
-            const _MiniPill(label: 'Transcript preview'),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: 'CGPA ${record.cgpa}'),
+              const _MiniPill(label: 'Completed courses checked'),
+              const _MiniPill(label: 'Cohort mapped'),
+              const _MiniPill(label: 'Transcript preview'),
+            ],
+          ),
           const SizedBox(height: 10),
           Text(record.issue, style: TextStyle(color: scheme.onSurfaceVariant)),
           const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.history_edu_outlined),
-              label: const Text('Academic history'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.groups_outlined),
-              label: const Text('Cohort'),
-            ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.lock_outline),
-              label: const Text('Lock record'),
-            ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.history_edu_outlined),
+                label: const Text('Academic history'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.groups_outlined),
+                label: const Text('Cohort'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.lock_outline),
+                label: const Text('Lock record'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -168,10 +189,7 @@ class _RecordChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-    );
+    return Chip(avatar: Icon(icon, size: 18), label: Text(label));
   }
 }
 
@@ -190,7 +208,10 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }

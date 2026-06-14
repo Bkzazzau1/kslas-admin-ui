@@ -4,7 +4,8 @@ class PeopleAccessControlPanel extends StatefulWidget {
   const PeopleAccessControlPanel({super.key});
 
   @override
-  State<PeopleAccessControlPanel> createState() => _PeopleAccessControlPanelState();
+  State<PeopleAccessControlPanel> createState() =>
+      _PeopleAccessControlPanelState();
 }
 
 class _PeopleAccessControlPanelState extends State<PeopleAccessControlPanel> {
@@ -62,22 +63,26 @@ class _PeopleAccessControlPanelState extends State<PeopleAccessControlPanel> {
   static const _rolePolicies = [
     _RolePolicy(
       role: 'Lecturer',
-      policy: 'Can manage own courses, assignments, marks, course notices and question drafts only.',
+      policy:
+          'Can manage own courses, assignments, marks, course notices and question drafts only.',
       risk: 'Medium',
     ),
     _RolePolicy(
       role: 'Moderator',
-      policy: 'Can review question sets, add comments, approve or return to lecturer.',
+      policy:
+          'Can review question sets, add comments, approve or return to lecturer.',
       risk: 'High',
     ),
     _RolePolicy(
       role: 'Exam Officer',
-      policy: 'Can schedule exams, publish official notices, package questions and release results.',
+      policy:
+          'Can schedule exams, publish official notices, package questions and release results.',
       risk: 'Critical',
     ),
     _RolePolicy(
       role: 'Records Department',
-      policy: 'Can reconcile student records, CGPA, transcript preview, cohorts and carryovers.',
+      policy:
+          'Can reconcile student records, CGPA, transcript preview, cohorts and carryovers.',
       risk: 'Critical',
     ),
   ];
@@ -93,78 +98,140 @@ class _PeopleAccessControlPanelState extends State<PeopleAccessControlPanel> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.groups_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'People / Staff Roles & Access Control',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.groups_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'People / Staff Roles & Access Control',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: const Text('Add staff'),
+                ),
+              ],
             ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.person_add_alt_1_outlined),
-              label: const Text('Add staff'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _PeopleChip(
+                  label: 'Staff accounts: 148',
+                  icon: Icons.badge_outlined,
+                ),
+                _PeopleChip(
+                  label: 'Active roles: 11',
+                  icon: Icons.admin_panel_settings_outlined,
+                ),
+                _PeopleChip(
+                  label: 'Pending setup: 8',
+                  icon: Icons.pending_actions_outlined,
+                ),
+                _PeopleChip(
+                  label: 'High-risk permissions: 14',
+                  icon: Icons.security_outlined,
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: const [
-            _PeopleChip(label: 'Staff accounts: 148', icon: Icons.badge_outlined),
-            _PeopleChip(label: 'Active roles: 11', icon: Icons.admin_panel_settings_outlined),
-            _PeopleChip(label: 'Pending setup: 8', icon: Icons.pending_actions_outlined),
-            _PeopleChip(label: 'High-risk permissions: 14', icon: Icons.security_outlined),
-          ]),
-          const SizedBox(height: 16),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedRole,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All roles')),
-                  DropdownMenuItem(value: 'Lecturer', child: Text('Lecturer')),
-                  DropdownMenuItem(value: 'Moderator', child: Text('Moderator')),
-                  DropdownMenuItem(value: 'Exam Officer', child: Text('Exam Officer')),
-                  DropdownMenuItem(value: 'Records Department', child: Text('Records Department')),
-                  DropdownMenuItem(value: 'Invigilator', child: Text('Invigilator')),
-                ],
-                onChanged: (value) => setState(() => _selectedRole = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Role'),
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedRole,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All roles')),
+                      DropdownMenuItem(
+                        value: 'Lecturer',
+                        child: Text('Lecturer'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Moderator',
+                        child: Text('Moderator'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Exam Officer',
+                        child: Text('Exam Officer'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Records Department',
+                        child: Text('Records Department'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Invigilator',
+                        child: Text('Invigilator'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedRole = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Role'),
+                  ),
+                ),
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedUnit,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All units')),
+                      DropdownMenuItem(
+                        value: 'Computing',
+                        child: Text('Computing'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Faculty Office',
+                        child: Text('Faculty Office'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Academic Registry',
+                        child: Text('Academic Registry'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CBT Centre',
+                        child: Text('CBT Centre'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedUnit = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Unit'),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedUnit,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All units')),
-                  DropdownMenuItem(value: 'Computing', child: Text('Computing')),
-                  DropdownMenuItem(value: 'Faculty Office', child: Text('Faculty Office')),
-                  DropdownMenuItem(value: 'Academic Registry', child: Text('Academic Registry')),
-                  DropdownMenuItem(value: 'CBT Centre', child: Text('CBT Centre')),
-                ],
-                onChanged: (value) => setState(() => _selectedUnit = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Unit'),
-              ),
+            const SizedBox(height: 18),
+            Text(
+              'Staff accounts',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-          ]),
-          const SizedBox(height: 18),
-          Text(
-            'Staff accounts',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final staff in filtered) _StaffTile(staff: staff),
-          const SizedBox(height: 18),
-          Text(
-            'Permission policies',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final policy in _rolePolicies) _RolePolicyTile(policy: policy),
-        ]),
+            const SizedBox(height: 10),
+            for (final staff in filtered) _StaffTile(staff: staff),
+            const SizedBox(height: 18),
+            Text(
+              'Permission policies',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final policy in _rolePolicies) _RolePolicyTile(policy: policy),
+          ],
+        ),
       ),
     );
   }
@@ -178,7 +245,9 @@ class _StaffTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = staff.status == 'Active' ? scheme.primary : scheme.secondary;
+    final statusColor = staff.status == 'Active'
+        ? scheme.primary
+        : scheme.secondary;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -186,42 +255,67 @@ class _StaffTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${staff.name} • ${staff.staffId}', style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text('${staff.role} • ${staff.unit}', style: TextStyle(color: scheme.onSurfaceVariant)),
-            ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${staff.name} • ${staff.staffId}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${staff.role} • ${staff.unit}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: staff.status, color: statusColor),
+            ],
           ),
-          _StatusBadge(text: staff.status, color: statusColor),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: staff.permissions),
-          _MiniPill(label: staff.workload),
-        ]),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.visibility_outlined),
-            label: const Text('Profile'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: staff.permissions),
+              _MiniPill(label: staff.workload),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.admin_panel_settings_outlined),
-            label: const Text('Permissions'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.visibility_outlined),
+                label: const Text('Profile'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('Permissions'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.assignment_ind_outlined),
+                label: const Text('Assign work'),
+              ),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.assignment_ind_outlined),
-            label: const Text('Assign work'),
-          ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -237,8 +331,8 @@ class _RolePolicyTile extends StatelessWidget {
     final riskColor = policy.risk == 'Critical'
         ? scheme.error
         : policy.risk == 'High'
-            ? scheme.secondary
-            : scheme.primary;
+        ? scheme.secondary
+        : scheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -246,7 +340,10 @@ class _RolePolicyTile extends StatelessWidget {
         foregroundColor: riskColor,
         child: const Icon(Icons.security_outlined),
       ),
-      title: Text(policy.role, style: const TextStyle(fontWeight: FontWeight.w800)),
+      title: Text(
+        policy.role,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
       subtitle: Text(policy.policy),
       trailing: _StatusBadge(text: policy.risk, color: riskColor),
     );
@@ -274,10 +371,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -292,7 +395,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),

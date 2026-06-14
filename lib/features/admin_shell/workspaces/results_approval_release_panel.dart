@@ -4,10 +4,12 @@ class ResultsApprovalReleasePanel extends StatefulWidget {
   const ResultsApprovalReleasePanel({super.key});
 
   @override
-  State<ResultsApprovalReleasePanel> createState() => _ResultsApprovalReleasePanelState();
+  State<ResultsApprovalReleasePanel> createState() =>
+      _ResultsApprovalReleasePanelState();
 }
 
-class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePanel> {
+class _ResultsApprovalReleasePanelState
+    extends State<ResultsApprovalReleasePanel> {
   String _selectedStage = 'All';
   String _selectedDepartment = 'All';
 
@@ -21,7 +23,8 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
       passRate: '84%',
       missingScores: 0,
       stage: 'HoD Review',
-      issue: 'Lecturer submitted marks. HoD review pending before exam office release.',
+      issue:
+          'Lecturer submitted marks. HoD review pending before exam office release.',
     ),
     _ResultBatch(
       courseCode: 'CSC 309',
@@ -43,7 +46,8 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
       passRate: '91%',
       missingScores: 0,
       stage: 'Ready for Release',
-      issue: 'Records reconciliation completed. Ready for exam officer release.',
+      issue:
+          'Records reconciliation completed. Ready for exam officer release.',
     ),
     _ResultBatch(
       courseCode: 'MTH 301',
@@ -54,7 +58,8 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
       passRate: '68%',
       missingScores: 7,
       stage: 'Records Reconcile',
-      issue: 'Seven students have carryover/repeat status requiring records confirmation.',
+      issue:
+          'Seven students have carryover/repeat status requiring records confirmation.',
     ),
   ];
 
@@ -83,83 +88,150 @@ class _ResultsApprovalReleasePanelState extends State<ResultsApprovalReleasePane
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final filtered = _batches
-        .where((batch) => _selectedStage == 'All' || batch.stage == _selectedStage)
-        .where((batch) => _selectedDepartment == 'All' || batch.department == _selectedDepartment)
+        .where(
+          (batch) => _selectedStage == 'All' || batch.stage == _selectedStage,
+        )
+        .where(
+          (batch) =>
+              _selectedDepartment == 'All' ||
+              batch.department == _selectedDepartment,
+        )
         .toList();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.workspace_premium_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Results Approval & Release',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.workspace_premium_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Results Approval & Release',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.publish_outlined),
+                  label: const Text('Release approved'),
+                ),
+              ],
             ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.publish_outlined),
-              label: const Text('Release approved'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _ResultChip(
+                  label: 'Lecturer submitted: 18',
+                  icon: Icons.upload_file_outlined,
+                ),
+                _ResultChip(
+                  label: 'HoD review: 7',
+                  icon: Icons.groups_2_outlined,
+                ),
+                _ResultChip(
+                  label: 'Records reconcile: 5',
+                  icon: Icons.badge_outlined,
+                ),
+                _ResultChip(
+                  label: 'Ready release: 12',
+                  icon: Icons.verified_outlined,
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: const [
-            _ResultChip(label: 'Lecturer submitted: 18', icon: Icons.upload_file_outlined),
-            _ResultChip(label: 'HoD review: 7', icon: Icons.groups_2_outlined),
-            _ResultChip(label: 'Records reconcile: 5', icon: Icons.badge_outlined),
-            _ResultChip(label: 'Ready release: 12', icon: Icons.verified_outlined),
-          ]),
-          const SizedBox(height: 16),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedStage,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All stages')),
-                  DropdownMenuItem(value: 'HoD Review', child: Text('HoD Review')),
-                  DropdownMenuItem(value: 'Moderator Query', child: Text('Moderator Query')),
-                  DropdownMenuItem(value: 'Records Reconcile', child: Text('Records Reconcile')),
-                  DropdownMenuItem(value: 'Ready for Release', child: Text('Ready for Release')),
-                ],
-                onChanged: (value) => setState(() => _selectedStage = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Workflow stage'),
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedStage,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All stages')),
+                      DropdownMenuItem(
+                        value: 'HoD Review',
+                        child: Text('HoD Review'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Moderator Query',
+                        child: Text('Moderator Query'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Records Reconcile',
+                        child: Text('Records Reconcile'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Ready for Release',
+                        child: Text('Ready for Release'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedStage = value ?? 'All'),
+                    decoration: const InputDecoration(
+                      labelText: 'Workflow stage',
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedDepartment,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All departments'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Computing',
+                        child: Text('Computing'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'General Studies',
+                        child: Text('General Studies'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Mathematics',
+                        child: Text('Mathematics'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedDepartment = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Department'),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedDepartment,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All departments')),
-                  DropdownMenuItem(value: 'Computing', child: Text('Computing')),
-                  DropdownMenuItem(value: 'General Studies', child: Text('General Studies')),
-                  DropdownMenuItem(value: 'Mathematics', child: Text('Mathematics')),
-                ],
-                onChanged: (value) => setState(() => _selectedDepartment = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Department'),
-              ),
+            const SizedBox(height: 18),
+            Text(
+              'Result batches',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-          ]),
-          const SizedBox(height: 18),
-          Text(
-            'Result batches',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final batch in filtered) _ResultBatchTile(batch: batch),
-          const SizedBox(height: 18),
-          Text(
-            'Approval audit trail',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final audit in _auditTrail) _AuditTile(audit: audit),
-        ]),
+            const SizedBox(height: 10),
+            for (final batch in filtered) _ResultBatchTile(batch: batch),
+            const SizedBox(height: 18),
+            Text(
+              'Approval audit trail',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final audit in _auditTrail) _AuditTile(audit: audit),
+          ],
+        ),
       ),
     );
   }
@@ -176,8 +248,8 @@ class _ResultBatchTile extends StatelessWidget {
     final statusColor = batch.stage == 'Moderator Query'
         ? scheme.error
         : batch.stage == 'Ready for Release'
-            ? scheme.primary
-            : scheme.secondary;
+        ? scheme.primary
+        : scheme.secondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -185,49 +257,76 @@ class _ResultBatchTile extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: batch.missingScores > 0 ? scheme.error.withValues(alpha: 0.4) : scheme.outlineVariant,
+          color: batch.missingScores > 0
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
         ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${batch.courseCode} • ${batch.courseTitle}', style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text('${batch.department} • ${batch.lecturer}', style: TextStyle(color: scheme.onSurfaceVariant)),
-            ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${batch.courseCode} • ${batch.courseTitle}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${batch.department} • ${batch.lecturer}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: batch.stage, color: statusColor),
+            ],
           ),
-          _StatusBadge(text: batch.stage, color: statusColor),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: '${batch.students} students'),
-          _MiniPill(label: 'Pass rate ${batch.passRate}'),
-          _MiniPill(label: '${batch.missingScores} missing scores'),
-          _MiniPill(label: 'Audit required'),
-        ]),
-        const SizedBox(height: 10),
-        Text(batch.issue, style: TextStyle(color: scheme.onSurfaceVariant)),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.visibility_outlined),
-            label: const Text('Review batch'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: '${batch.students} students'),
+              _MiniPill(label: 'Pass rate ${batch.passRate}'),
+              _MiniPill(label: '${batch.missingScores} missing scores'),
+              _MiniPill(label: 'Audit required'),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.rule_outlined),
-            label: const Text('Query'),
+          const SizedBox(height: 10),
+          Text(batch.issue, style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.visibility_outlined),
+                label: const Text('Review batch'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.rule_outlined),
+                label: const Text('Query'),
+              ),
+              FilledButton.icon(
+                onPressed: batch.stage == 'Ready for Release' ? () {} : null,
+                icon: const Icon(Icons.publish_outlined),
+                label: const Text('Release'),
+              ),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: batch.stage == 'Ready for Release' ? () {} : null,
-            icon: const Icon(Icons.publish_outlined),
-            label: const Text('Release'),
-          ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -247,7 +346,10 @@ class _AuditTile extends StatelessWidget {
         foregroundColor: scheme.onPrimaryContainer,
         child: const Icon(Icons.history_outlined),
       ),
-      title: Text(audit.action, style: const TextStyle(fontWeight: FontWeight.w800)),
+      title: Text(
+        audit.action,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
       subtitle: Text('${audit.actor} • ${audit.role}'),
       trailing: Text(audit.time),
     );
@@ -275,10 +377,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -293,7 +401,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),

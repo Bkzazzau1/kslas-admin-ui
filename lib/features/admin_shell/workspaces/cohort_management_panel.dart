@@ -79,21 +79,24 @@ class _CohortManagementPanelState extends State<CohortManagementPanel> {
       title: 'Course registration rules pending',
       cohortId: 'cohort-bsc-se-2024-dlc',
       owner: 'Department Admin',
-      detail: 'DLC semester 3 credit load and elective rules must be confirmed before registration opens.',
+      detail:
+          'DLC semester 3 credit load and elective rules must be confirmed before registration opens.',
       severity: 'High',
     ),
     _CohortAction(
       title: 'Result mapping review',
       cohortId: 'cohort-bsc-se-2024-dlc',
       owner: 'Records Department',
-      detail: 'Repeat/carryover mapping for DLC students needs records confirmation.',
+      detail:
+          'Repeat/carryover mapping for DLC students needs records confirmation.',
       severity: 'Medium',
     ),
     _CohortAction(
       title: 'Notice targeting verified',
       cohortId: 'cohort-bsc-se-2023-regular',
       owner: 'Exam Office',
-      detail: 'Cohort is available for targeted notices and acknowledgement tracking.',
+      detail:
+          'Cohort is available for targeted notices and acknowledgement tracking.',
       severity: 'Low',
     ),
   ];
@@ -102,84 +105,139 @@ class _CohortManagementPanelState extends State<CohortManagementPanel> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final filtered = _cohorts
-        .where((cohort) => _selectedMode == 'All' || cohort.mode == _selectedMode)
-        .where((cohort) => _selectedStatus == 'All' || cohort.status == _selectedStatus)
+        .where(
+          (cohort) => _selectedMode == 'All' || cohort.mode == _selectedMode,
+        )
+        .where(
+          (cohort) =>
+              _selectedStatus == 'All' || cohort.status == _selectedStatus,
+        )
         .toList();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.groups_2_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Cohort Management',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.groups_2_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Cohort Management',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.group_add_outlined),
+                  label: const Text('Create cohort'),
+                ),
+              ],
             ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.group_add_outlined),
-              label: const Text('Create cohort'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _CohortChip(
+                  label: 'Active cohorts: 62',
+                  icon: Icons.groups_2_outlined,
+                ),
+                _CohortChip(label: 'Regular: 34', icon: Icons.school_outlined),
+                _CohortChip(
+                  label: 'Part-time: 11',
+                  icon: Icons.schedule_outlined,
+                ),
+                _CohortChip(
+                  label: 'DLC: 9',
+                  icon: Icons.cast_for_education_outlined,
+                ),
+                _CohortChip(
+                  label: 'Needs review: 8',
+                  icon: Icons.report_problem_outlined,
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: const [
-            _CohortChip(label: 'Active cohorts: 62', icon: Icons.groups_2_outlined),
-            _CohortChip(label: 'Regular: 34', icon: Icons.school_outlined),
-            _CohortChip(label: 'Part-time: 11', icon: Icons.schedule_outlined),
-            _CohortChip(label: 'DLC: 9', icon: Icons.cast_for_education_outlined),
-            _CohortChip(label: 'Needs review: 8', icon: Icons.report_problem_outlined),
-          ]),
-          const SizedBox(height: 16),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedMode,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All modes')),
-                  DropdownMenuItem(value: 'Regular', child: Text('Regular')),
-                  DropdownMenuItem(value: 'Part-Time', child: Text('Part-Time')),
-                  DropdownMenuItem(value: 'Distance Learning', child: Text('Distance Learning')),
-                  DropdownMenuItem(value: 'Shared', child: Text('Shared')),
-                ],
-                onChanged: (value) => setState(() => _selectedMode = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Mode'),
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedMode,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All modes')),
+                      DropdownMenuItem(
+                        value: 'Regular',
+                        child: Text('Regular'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Part-Time',
+                        child: Text('Part-Time'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Distance Learning',
+                        child: Text('Distance Learning'),
+                      ),
+                      DropdownMenuItem(value: 'Shared', child: Text('Shared')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedMode = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Mode'),
+                  ),
+                ),
+                SizedBox(
+                  width: 230,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedStatus,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All statuses'),
+                      ),
+                      DropdownMenuItem(value: 'Active', child: Text('Active')),
+                      DropdownMenuItem(value: 'Review', child: Text('Review')),
+                      DropdownMenuItem(
+                        value: 'Archived',
+                        child: Text('Archived'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedStatus = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Status'),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 230,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedStatus,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All statuses')),
-                  DropdownMenuItem(value: 'Active', child: Text('Active')),
-                  DropdownMenuItem(value: 'Review', child: Text('Review')),
-                  DropdownMenuItem(value: 'Archived', child: Text('Archived')),
-                ],
-                onChanged: (value) => setState(() => _selectedStatus = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Status'),
-              ),
+            const SizedBox(height: 18),
+            Text(
+              'Cohort registry',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-          ]),
-          const SizedBox(height: 18),
-          Text(
-            'Cohort registry',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final cohort in filtered) _CohortTile(cohort: cohort),
-          const SizedBox(height: 18),
-          Text(
-            'Cohort actions & risks',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final action in _actions) _CohortActionTile(action: action),
-        ]),
+            const SizedBox(height: 10),
+            for (final cohort in filtered) _CohortTile(cohort: cohort),
+            const SizedBox(height: 18),
+            Text(
+              'Cohort actions & risks',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final action in _actions) _CohortActionTile(action: action),
+          ],
+        ),
       ),
     );
   }
@@ -193,64 +251,99 @@ class _CohortTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = cohort.status == 'Review' ? scheme.error : scheme.primary;
+    final statusColor = cohort.status == 'Review'
+        ? scheme.error
+        : scheme.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cohort.status == 'Review' ? scheme.error.withValues(alpha: 0.4) : scheme.outlineVariant),
+        border: Border.all(
+          color: cohort.status == 'Review'
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
+        ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(cohort.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text('${cohort.cohortId} • ${cohort.programme} • ${cohort.department}', style: TextStyle(color: scheme.onSurfaceVariant)),
-            ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cohort.name,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${cohort.cohortId} • ${cohort.programme} • ${cohort.department}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: cohort.status, color: statusColor),
+            ],
           ),
-          _StatusBadge(text: cohort.status, color: statusColor),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: '${cohort.intakeYear} intake'),
-          _MiniPill(label: cohort.mode),
-          _MiniPill(label: '${cohort.level} Level'),
-          _MiniPill(label: 'Semester ${cohort.semester}'),
-          _MiniPill(label: '${cohort.students} students'),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: 'Registration: ${cohort.registration}'),
-          _MiniPill(label: 'Notices: ${cohort.noticeTargeting}'),
-          _MiniPill(label: 'Results: ${cohort.resultMapping}'),
-        ]),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.people_outline),
-            label: const Text('Students'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: '${cohort.intakeYear} intake'),
+              _MiniPill(label: cohort.mode),
+              _MiniPill(label: '${cohort.level} Level'),
+              _MiniPill(label: 'Semester ${cohort.semester}'),
+              _MiniPill(label: '${cohort.students} students'),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.app_registration_outlined),
-            label: const Text('Registration rules'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: 'Registration: ${cohort.registration}'),
+              _MiniPill(label: 'Notices: ${cohort.noticeTargeting}'),
+              _MiniPill(label: 'Results: ${cohort.resultMapping}'),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.campaign_outlined),
-            label: const Text('Notice target'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.people_outline),
+                label: const Text('Students'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.app_registration_outlined),
+                label: const Text('Registration rules'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.campaign_outlined),
+                label: const Text('Notice target'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit cohort'),
+              ),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit cohort'),
-          ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -266,8 +359,8 @@ class _CohortActionTile extends StatelessWidget {
     final severityColor = action.severity == 'High'
         ? scheme.error
         : action.severity == 'Medium'
-            ? scheme.secondary
-            : scheme.primary;
+        ? scheme.secondary
+        : scheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -275,7 +368,10 @@ class _CohortActionTile extends StatelessWidget {
         foregroundColor: severityColor,
         child: const Icon(Icons.flag_outlined),
       ),
-      title: Text('${action.title} • ${action.cohortId}', style: const TextStyle(fontWeight: FontWeight.w800)),
+      title: Text(
+        '${action.title} • ${action.cohortId}',
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
       subtitle: Text('${action.owner} • ${action.detail}'),
       trailing: _StatusBadge(text: action.severity, color: severityColor),
     );
@@ -303,10 +399,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -321,7 +423,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),

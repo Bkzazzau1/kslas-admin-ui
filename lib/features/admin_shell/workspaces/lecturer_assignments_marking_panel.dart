@@ -4,12 +4,16 @@ class LecturerAssignmentsMarkingPanel extends StatefulWidget {
   const LecturerAssignmentsMarkingPanel({super.key});
 
   @override
-  State<LecturerAssignmentsMarkingPanel> createState() => _LecturerAssignmentsMarkingPanelState();
+  State<LecturerAssignmentsMarkingPanel> createState() =>
+      _LecturerAssignmentsMarkingPanelState();
 }
 
-class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMarkingPanel> {
+class _LecturerAssignmentsMarkingPanelState
+    extends State<LecturerAssignmentsMarkingPanel> {
   String _selectedCourse = 'CSC 305';
   String _selectedStatus = 'Pending Marking';
+  _SubmissionReviewItem? _activeSubmission;
+  _ExamMarkingSample? _activeExamScript;
 
   static const _assignments = [
     _AssignmentQueueItem(
@@ -54,7 +58,8 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
       maxScore: 100,
       rubricStatus: 'Rubric partial',
       integrityStatus: 'Clean',
-      feedback: 'Good explanation of traversal logic. Improve complexity analysis.',
+      feedback:
+          'Good explanation of traversal logic. Improve complexity analysis.',
     ),
     _SubmissionReviewItem(
       student: 'Aisha Musa',
@@ -80,15 +85,77 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
     ),
   ];
 
+  static const _examSamples = [
+    _ExamMarkingSample(
+      courseCode: 'CSC 305',
+      examTitle: 'Data Structures CBT + Theory',
+      candidateNo: 'DLC/CSC305/044',
+      student: 'Maryam Bello',
+      objectiveScore: 32,
+      theoryScore: 41,
+      practicalScore: 0,
+      maxScore: 100,
+      markingGuide: 'Guide applied',
+      status: 'Marked',
+      note:
+          'Strong tree traversal answer; minor deduction for missing heap case.',
+    ),
+    _ExamMarkingSample(
+      courseCode: 'CSC 305',
+      examTitle: 'Data Structures CBT + Theory',
+      candidateNo: 'DLC/CSC305/071',
+      student: 'Tunde Okafor',
+      objectiveScore: 28,
+      theoryScore: 0,
+      practicalScore: 0,
+      maxScore: 100,
+      markingGuide: 'Needs theory marking',
+      status: 'Pending Marking',
+      note:
+          'Objective section auto-scored. Theory response awaits lecturer review.',
+    ),
+    _ExamMarkingSample(
+      courseCode: 'CSC 309',
+      examTitle: 'Artificial Intelligence Practical',
+      candidateNo: 'DLC/CSC309/118',
+      student: 'Fatima Sani',
+      objectiveScore: 24,
+      theoryScore: 30,
+      practicalScore: 26,
+      maxScore: 100,
+      markingGuide: 'Moderator queried',
+      status: 'Integrity Review',
+      note:
+          'Practical trace is correct, but similarity flag needs lecturer comment.',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final filteredAssignments = _assignments
-        .where((item) => _selectedCourse == 'All' || item.courseCode == _selectedCourse)
-        .where((item) => _selectedStatus == 'All' || item.status == _selectedStatus)
+        .where(
+          (item) =>
+              _selectedCourse == 'All' || item.courseCode == _selectedCourse,
+        )
+        .where(
+          (item) => _selectedStatus == 'All' || item.status == _selectedStatus,
+        )
         .toList();
     final filteredSubmissions = _submissions
-        .where((item) => _selectedCourse == 'All' || item.courseCode == _selectedCourse)
+        .where(
+          (item) =>
+              _selectedCourse == 'All' || item.courseCode == _selectedCourse,
+        )
+        .toList();
+    final filteredExamSamples = _examSamples
+        .where(
+          (item) =>
+              _selectedCourse == 'All' || item.courseCode == _selectedCourse,
+        )
+        .where(
+          (item) => _selectedStatus == 'All' || item.status == _selectedStatus,
+        )
         .toList();
 
     return Card(
@@ -104,7 +171,9 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
                 Expanded(
                   child: Text(
                     'Lecturer Assignments & Marking',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 FilledButton.icon(
@@ -119,10 +188,30 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
               spacing: 10,
               runSpacing: 10,
               children: const [
-                _AssignmentChip(label: 'Open assignments: 12', icon: Icons.assignment_outlined),
-                _AssignmentChip(label: 'Pending marking: 302', icon: Icons.edit_note_outlined),
-                _AssignmentChip(label: 'Late submissions: 26', icon: Icons.schedule_outlined),
-                _AssignmentChip(label: 'Integrity flags: 14', icon: Icons.gpp_maybe_outlined),
+                _AssignmentChip(
+                  label: 'Open assignments: 12',
+                  icon: Icons.assignment_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Pending marking: 302',
+                  icon: Icons.edit_note_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Exam scripts: 418',
+                  icon: Icons.fact_check_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Exam samples: 24',
+                  icon: Icons.description_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Late submissions: 26',
+                  icon: Icons.schedule_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Integrity flags: 14',
+                  icon: Icons.gpp_maybe_outlined,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -133,47 +222,129 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
                 SizedBox(
                   width: 220,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: _selectedCourse,
                     items: const [
-                      DropdownMenuItem(value: 'All', child: Text('All courses')),
-                      DropdownMenuItem(value: 'CSC 305', child: Text('CSC 305')),
-                      DropdownMenuItem(value: 'CSC 309', child: Text('CSC 309')),
-                      DropdownMenuItem(value: 'SEN 301', child: Text('SEN 301')),
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All courses'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CSC 305',
+                        child: Text('CSC 305'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CSC 309',
+                        child: Text('CSC 309'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'SEN 301',
+                        child: Text('SEN 301'),
+                      ),
                     ],
-                    onChanged: (value) => setState(() => _selectedCourse = value ?? 'All'),
+                    onChanged: (value) =>
+                        setState(() => _selectedCourse = value ?? 'All'),
                     decoration: const InputDecoration(labelText: 'Course'),
                   ),
                 ),
                 SizedBox(
                   width: 240,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: _selectedStatus,
                     items: const [
-                      DropdownMenuItem(value: 'All', child: Text('All statuses')),
-                      DropdownMenuItem(value: 'Pending Marking', child: Text('Pending Marking')),
-                      DropdownMenuItem(value: 'Integrity Review', child: Text('Integrity Review')),
-                      DropdownMenuItem(value: 'Ready to Release', child: Text('Ready to Release')),
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All statuses'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Pending Marking',
+                        child: Text('Pending Marking'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Integrity Review',
+                        child: Text('Integrity Review'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Ready to Release',
+                        child: Text('Ready to Release'),
+                      ),
+                      DropdownMenuItem(value: 'Marked', child: Text('Marked')),
                     ],
-                    onChanged: (value) => setState(() => _selectedStatus = value ?? 'All'),
+                    onChanged: (value) =>
+                        setState(() => _selectedStatus = value ?? 'All'),
                     decoration: const InputDecoration(labelText: 'Status'),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 18),
+            if (_activeSubmission != null || _activeExamScript != null) ...[
+              if (_activeSubmission != null)
+                _AssignmentMarkingWorkspace(
+                  item: _activeSubmission!,
+                  onClose: () => setState(() => _activeSubmission = null),
+                ),
+              if (_activeExamScript != null)
+                _ExamScriptMarkingWorkspace(
+                  item: _activeExamScript!,
+                  onClose: () => setState(() => _activeExamScript = null),
+                ),
+              const SizedBox(height: 18),
+            ],
             Text(
               'Assignment queue',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            for (final assignment in filteredAssignments) _AssignmentQueueTile(item: assignment),
+            for (final assignment in filteredAssignments)
+              _AssignmentQueueTile(
+                item: assignment,
+                onReview: () {
+                  final submission = _submissions.firstWhere(
+                    (item) => item.courseCode == assignment.courseCode,
+                    orElse: () => _submissions.first,
+                  );
+                  setState(() {
+                    _activeSubmission = submission;
+                    _activeExamScript = null;
+                  });
+                },
+              ),
             const SizedBox(height: 18),
             Text(
               'Submission review',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            for (final submission in filteredSubmissions) _SubmissionReviewTile(item: submission),
+            for (final submission in filteredSubmissions)
+              _SubmissionReviewTile(
+                item: submission,
+                onOpen: () => setState(() {
+                  _activeSubmission = submission;
+                  _activeExamScript = null;
+                }),
+              ),
+            const SizedBox(height: 18),
+            Text(
+              'Examination marking samples',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final sample in filteredExamSamples)
+              _ExamMarkingSampleTile(
+                item: sample,
+                onOpen: () => setState(() {
+                  _activeExamScript = sample;
+                  _activeSubmission = null;
+                }),
+              ),
           ],
         ),
       ),
@@ -181,10 +352,118 @@ class _LecturerAssignmentsMarkingPanelState extends State<LecturerAssignmentsMar
   }
 }
 
+class _ExamMarkingSampleTile extends StatelessWidget {
+  const _ExamMarkingSampleTile({required this.item, required this.onOpen});
+
+  final _ExamMarkingSample item;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = item.status == 'Integrity Review'
+        ? scheme.error
+        : item.status == 'Marked'
+        ? scheme.primary
+        : scheme.secondary;
+    final totalScore =
+        item.objectiveScore + item.theoryScore + item.practicalScore;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: item.status == 'Integrity Review'
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.courseCode} • ${item.examTitle}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.student} • ${item.candidateNo}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: item.status, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: 'Objective ${item.objectiveScore}'),
+              _MiniPill(label: 'Theory ${item.theoryScore}'),
+              _MiniPill(label: 'Practical ${item.practicalScore}'),
+              _MiniPill(label: 'Total $totalScore/${item.maxScore}'),
+              _MiniPill(label: item.markingGuide),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(item.note, style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('Open script'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.rule_outlined),
+                label: const Text('Marking guide'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.edit_note_outlined),
+                label: const Text('Mark script'),
+              ),
+              FilledButton.icon(
+                onPressed: item.status == 'Marked' ? () {} : null,
+                icon: const Icon(Icons.publish_outlined),
+                label: const Text('Submit result batch'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AssignmentQueueTile extends StatelessWidget {
-  const _AssignmentQueueTile({required this.item});
+  const _AssignmentQueueTile({required this.item, required this.onReview});
 
   final _AssignmentQueueItem item;
+  final VoidCallback onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -192,8 +471,8 @@ class _AssignmentQueueTile extends StatelessWidget {
     final statusColor = item.status == 'Integrity Review'
         ? scheme.error
         : item.status == 'Ready to Release'
-            ? scheme.primary
-            : scheme.secondary;
+        ? scheme.primary
+        : scheme.secondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -202,63 +481,1059 @@ class _AssignmentQueueTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          alignment: WrapAlignment.spaceBetween,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${item.courseCode} • ${item.title}', style: const TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text('Due: ${item.dueDate}', style: TextStyle(color: scheme.onSurfaceVariant)),
-              ]),
-            ),
-            _StatusBadge(text: item.status, color: statusColor),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: '${item.submissions} submissions'),
-          _MiniPill(label: '${item.marked} marked'),
-          _MiniPill(label: '${item.late} late'),
-          _MiniPill(label: '${item.flagged} flags'),
-        ]),
-        const SizedBox(height: 12),
-        LinearProgressIndicator(
-          value: item.submissions == 0 ? 0 : item.marked / item.submissions,
-          minHeight: 6,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.visibility_outlined),
-            label: const Text('Review submissions'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.courseCode} • ${item.title}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Due: ${item.dueDate}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: item.status, color: statusColor),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.rule_outlined),
-            label: const Text('Rubric'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: '${item.submissions} submissions'),
+              _MiniPill(label: '${item.marked} marked'),
+              _MiniPill(label: '${item.late} late'),
+              _MiniPill(label: '${item.flagged} flags'),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.publish_outlined),
-            label: const Text('Release marks'),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: item.submissions == 0 ? 0 : item.marked / item.submissions,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(999),
           ),
-        ]),
-      ]),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onReview,
+                icon: const Icon(Icons.visibility_outlined),
+                label: const Text('Review submissions'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.rule_outlined),
+                label: const Text('Rubric'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.publish_outlined),
+                label: const Text('Release marks'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _SubmissionReviewTile extends StatelessWidget {
-  const _SubmissionReviewTile({required this.item});
+class _AssignmentMarkingWorkspace extends StatefulWidget {
+  const _AssignmentMarkingWorkspace({
+    required this.item,
+    required this.onClose,
+  });
 
   final _SubmissionReviewItem item;
+  final VoidCallback onClose;
+
+  @override
+  State<_AssignmentMarkingWorkspace> createState() =>
+      _AssignmentMarkingWorkspaceState();
+}
+
+class _AssignmentMarkingWorkspaceState
+    extends State<_AssignmentMarkingWorkspace> {
+  int _selectedLine = 2;
+  Color _inkColor = Colors.green;
+  double _inkSize = 4;
+  final List<_ScriptAnnotation> _annotations = const [
+    _ScriptAnnotation(
+      line: 2,
+      type: _AnnotationType.highlight,
+      color: Colors.yellow,
+      text: 'Good opening',
+      strokeWidth: 4,
+    ),
+    _ScriptAnnotation(
+      line: 5,
+      type: _AnnotationType.underline,
+      color: Colors.green,
+      text: 'Correct BFS point',
+      strokeWidth: 4,
+    ),
+    _ScriptAnnotation(
+      line: 9,
+      type: _AnnotationType.inkMark,
+      color: Colors.red,
+      text: 'X',
+      strokeWidth: 5,
+    ),
+  ].toList();
+  final _noteController = TextEditingController(
+    text: 'Add stronger complexity explanation.',
+  );
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.rate_review_outlined, color: scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Open assignment submission',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Close',
+                onPressed: widget.onClose,
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: widget.item.student),
+              _MiniPill(label: widget.item.matricNo),
+              _MiniPill(label: widget.item.courseCode),
+              _MiniPill(label: 'Submitted ${widget.item.submittedAt}'),
+              _MiniPill(label: 'Read-only file'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _AnnotationToolbar(
+            selectedLine: _selectedLine,
+            inkColor: _inkColor,
+            inkSize: _inkSize,
+            noteController: _noteController,
+            lineCount: _assignmentSubmissionLines.length,
+            onLineChanged: (value) => setState(() => _selectedLine = value),
+            onInkChanged: (value) => setState(() => _inkColor = value),
+            onInkSizeChanged: (value) => setState(() => _inkSize = value),
+            onAddAnnotation: _addAnnotation,
+          ),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth > 900;
+              final panelWidth = wide
+                  ? (constraints.maxWidth - 14) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  SizedBox(
+                    width: panelWidth,
+                    child: _AssignmentSubmissionFilePage(
+                      item: widget.item,
+                      annotations: _annotations,
+                    ),
+                  ),
+                  SizedBox(
+                    width: panelWidth,
+                    child: _AssignmentScoreForm(item: widget.item),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addAnnotation(_AnnotationType type) {
+    final note = _noteController.text.trim();
+    setState(() {
+      _annotations.add(
+        _ScriptAnnotation(
+          line: _selectedLine,
+          type: type,
+          color: _inkColor,
+          text: type == _AnnotationType.inkMark
+              ? (note.isEmpty ? '✓' : note)
+              : (note.isEmpty ? type.label : note),
+          strokeWidth: _inkSize,
+        ),
+      );
+    });
+  }
+}
+
+class _AssignmentScoreForm extends StatelessWidget {
+  const _AssignmentScoreForm({required this.item});
+
+  final _SubmissionReviewItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Rubric-based grading',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        const _ScoreFields(
+          fields: [
+            _ScoreField('Understanding', '25'),
+            _ScoreField('Method', '20'),
+            _ScoreField('Accuracy', '17'),
+            _ScoreField('Presentation', '10'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          initialValue: '${item.score}',
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Final score / ${item.maxScore}',
+            prefixIcon: const Icon(Icons.score_outlined),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          initialValue: item.feedback,
+          minLines: 3,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            labelText: 'Feedback to student',
+            prefixIcon: Icon(Icons.feedback_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Save mark'),
+            ),
+            FilledButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.send_outlined),
+              label: const Text('Return feedback'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+const _examTranscriptLines = [
+  'Question 1: Explain the difference between stack and queue data structures with suitable use cases.',
+  'A stack is a linear data structure that follows last-in-first-out while a queue follows first-in-first-out.',
+  'Stacks are useful in recursion, undo operations, expression parsing and browser history management.',
+  'Queues are useful in scheduling, printer jobs, breadth-first search and customer service systems.',
+  'Question 2: Describe how a binary search tree handles insertion and search operations.',
+  'Insertion compares the new value with the root and moves left or right until an empty child position is found.',
+  'Search follows the same comparison path and can be efficient when the tree is balanced.',
+  'A limitation is that an unbalanced tree can degrade to linear search time.',
+  'Question 3: Give one practical application of graph traversal in computer science.',
+  'Graph traversal can be used for route discovery, social network analysis and dependency resolution.',
+];
+
+const _assignmentSubmissionLines = [
+  '1. Introduction',
+  'Graph traversal is a technique for visiting vertices and edges in a graph.',
+  'The two common traversal strategies are breadth-first search and depth-first search.',
+  'Both methods help solve problems such as path discovery, cycle detection and dependency ordering.',
+  '2. Breadth-First Search',
+  'Breadth-first search explores all neighbouring vertices before moving to the next level.',
+  'It uses a queue and is suitable for finding the shortest path in an unweighted graph.',
+  'The algorithm marks each visited vertex to avoid repeated processing.',
+  '3. Depth-First Search',
+  'Depth-first search follows one branch of the graph as far as possible before backtracking.',
+  'It may be implemented with recursion or an explicit stack.',
+  'DFS is useful for topological sorting, connected component detection and cycle checking.',
+  '4. Complexity Analysis',
+  'For an adjacency-list graph, both BFS and DFS run in O(V + E).',
+  'The memory cost depends on the visited set and the queue or stack used during traversal.',
+];
+
+enum _AnnotationType {
+  highlight('Highlight'),
+  underline('Underline'),
+  comment('Comment'),
+  note('Note'),
+  inkMark('Ink mark');
+
+  const _AnnotationType(this.label);
+
+  final String label;
+}
+
+class _ScriptAnnotation {
+  const _ScriptAnnotation({
+    required this.line,
+    required this.type,
+    required this.color,
+    required this.text,
+    required this.strokeWidth,
+  });
+
+  final int line;
+  final _AnnotationType type;
+  final Color color;
+  final String text;
+  final double strokeWidth;
+}
+
+class _AssignmentSubmissionFilePage extends StatelessWidget {
+  const _AssignmentSubmissionFilePage({
+    required this.item,
+    required this.annotations,
+  });
+
+  final _SubmissionReviewItem item;
+  final List<_ScriptAnnotation> annotations;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fileName =
+        '${item.courseCode.toLowerCase()}_${item.matricNo.replaceAll('/', '_')}.pdf';
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'KADUNA STATE UNIVERSITY',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Distance Learning Centre - Assignment Submission File',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: fileName),
+              _MiniPill(label: item.student),
+              _MiniPill(label: item.matricNo),
+              _MiniPill(label: item.courseCode),
+            ],
+          ),
+          const SizedBox(height: 16),
+          for (var i = 0; i < _assignmentSubmissionLines.length; i++)
+            _TranscriptLine(
+              lineNumber: i + 1,
+              text: _assignmentSubmissionLines[i],
+              annotations: annotations
+                  .where((annotation) => annotation.line == i + 1)
+                  .toList(),
+            ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.open_in_new_outlined),
+                label: const Text('Open sample file'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Download sample'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExamScriptMarkingWorkspace extends StatefulWidget {
+  const _ExamScriptMarkingWorkspace({
+    required this.item,
+    required this.onClose,
+  });
+
+  final _ExamMarkingSample item;
+  final VoidCallback onClose;
+
+  @override
+  State<_ExamScriptMarkingWorkspace> createState() =>
+      _ExamScriptMarkingWorkspaceState();
+}
+
+class _ExamScriptMarkingWorkspaceState
+    extends State<_ExamScriptMarkingWorkspace> {
+  int _selectedLine = 2;
+  Color _inkColor = Colors.red;
+  double _inkSize = 4;
+  final List<_ScriptAnnotation> _annotations = const [
+    _ScriptAnnotation(
+      line: 2,
+      type: _AnnotationType.highlight,
+      color: Colors.amber,
+      text: 'Relevant point',
+      strokeWidth: 4,
+    ),
+    _ScriptAnnotation(
+      line: 4,
+      type: _AnnotationType.underline,
+      color: Colors.green,
+      text: 'Good explanation',
+      strokeWidth: 4,
+    ),
+    _ScriptAnnotation(
+      line: 6,
+      type: _AnnotationType.comment,
+      color: Colors.red,
+      text: 'Needs example',
+      strokeWidth: 4,
+    ),
+  ].toList();
+
+  final _noteController = TextEditingController(
+    text: 'Clarify time complexity before final score.',
+  );
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final total =
+        widget.item.objectiveScore +
+        widget.item.theoryScore +
+        widget.item.practicalScore;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.secondary.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fact_check_outlined, color: scheme.secondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Kaduna State University examination transcript',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Close',
+                onPressed: widget.onClose,
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: widget.item.student),
+              _MiniPill(label: widget.item.candidateNo),
+              _MiniPill(label: widget.item.courseCode),
+              _MiniPill(label: 'Current total $total/${widget.item.maxScore}'),
+              _MiniPill(label: 'Read-only transcript'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _AnnotationToolbar(
+            selectedLine: _selectedLine,
+            inkColor: _inkColor,
+            inkSize: _inkSize,
+            noteController: _noteController,
+            lineCount: _examTranscriptLines.length,
+            onLineChanged: (value) => setState(() => _selectedLine = value),
+            onInkChanged: (value) => setState(() => _inkColor = value),
+            onInkSizeChanged: (value) => setState(() => _inkSize = value),
+            onAddAnnotation: _addAnnotation,
+          ),
+          const SizedBox(height: 14),
+          _ExamTranscriptPage(item: widget.item, annotations: _annotations),
+          const SizedBox(height: 14),
+          _ExamScoreSummary(item: widget.item, total: total),
+        ],
+      ),
+    );
+  }
+
+  void _addAnnotation(_AnnotationType type) {
+    final note = _noteController.text.trim();
+    setState(() {
+      _annotations.add(
+        _ScriptAnnotation(
+          line: _selectedLine,
+          type: type,
+          color: _inkColor,
+          text: note.isEmpty ? type.label : note,
+          strokeWidth: _inkSize,
+        ),
+      );
+    });
+  }
+}
+
+class _AnnotationToolbar extends StatelessWidget {
+  const _AnnotationToolbar({
+    required this.selectedLine,
+    required this.inkColor,
+    required this.inkSize,
+    required this.noteController,
+    required this.lineCount,
+    required this.onLineChanged,
+    required this.onInkChanged,
+    required this.onInkSizeChanged,
+    required this.onAddAnnotation,
+  });
+
+  final int selectedLine;
+  final Color inkColor;
+  final double inkSize;
+  final TextEditingController noteController;
+  final int lineCount;
+  final ValueChanged<int> onLineChanged;
+  final ValueChanged<Color> onInkChanged;
+  final ValueChanged<double> onInkSizeChanged;
+  final ValueChanged<_AnnotationType> onAddAnnotation;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      Colors.red,
+      Colors.green,
+      Colors.blue,
+      Colors.orange,
+      Colors.purple,
+      Colors.black,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Marking ink and annotation tools',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: 180,
+              child: DropdownButtonFormField<int>(
+                isExpanded: true,
+                initialValue: selectedLine,
+                items: [
+                  for (var i = 1; i <= lineCount; i++)
+                    DropdownMenuItem(value: i, child: Text('Line $i')),
+                ],
+                onChanged: (value) => onLineChanged(value ?? selectedLine),
+                decoration: const InputDecoration(labelText: 'Target line'),
+              ),
+            ),
+            for (final color in colors)
+              Tooltip(
+                message: 'Ink color',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: () => onInkChanged(color),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: inkColor == color
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: 220,
+              child: Row(
+                children: [
+                  const Icon(Icons.line_weight_outlined),
+                  Expanded(
+                    child: Slider(
+                      value: inkSize,
+                      min: 2,
+                      max: 10,
+                      divisions: 8,
+                      label: '${inkSize.round()} px',
+                      onChanged: onInkSizeChanged,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: noteController,
+          decoration: const InputDecoration(
+            labelText: 'Comment / note text',
+            prefixIcon: Icon(Icons.sticky_note_2_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => onAddAnnotation(_AnnotationType.highlight),
+              icon: const Icon(Icons.format_color_fill_outlined),
+              label: const Text('Highlight line'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => onAddAnnotation(_AnnotationType.underline),
+              icon: const Icon(Icons.format_underlined),
+              label: const Text('Underline'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => onAddAnnotation(_AnnotationType.comment),
+              icon: const Icon(Icons.comment_outlined),
+              label: const Text('Add comment'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => onAddAnnotation(_AnnotationType.note),
+              icon: const Icon(Icons.sticky_note_2_outlined),
+              label: const Text('Add note'),
+            ),
+            FilledButton.icon(
+              onPressed: () => onAddAnnotation(_AnnotationType.inkMark),
+              icon: const Icon(Icons.gesture_outlined),
+              label: const Text('Add ink mark'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ExamTranscriptPage extends StatelessWidget {
+  const _ExamTranscriptPage({required this.item, required this.annotations});
+
+  final _ExamMarkingSample item;
+  final List<_ScriptAnnotation> annotations;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'KADUNA STATE UNIVERSITY',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Distance Learning Centre - Examination Transcript',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: item.examTitle),
+              _MiniPill(label: item.courseCode),
+              _MiniPill(label: item.candidateNo),
+              _MiniPill(label: item.student),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < _examTranscriptLines.length; i++)
+            _TranscriptLine(
+              lineNumber: i + 1,
+              text: _examTranscriptLines[i],
+              annotations: annotations
+                  .where((annotation) => annotation.line == i + 1)
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TranscriptLine extends StatelessWidget {
+  const _TranscriptLine({
+    required this.lineNumber,
+    required this.text,
+    required this.annotations,
+  });
+
+  final int lineNumber;
+  final String text;
+  final List<_ScriptAnnotation> annotations;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlights = annotations
+        .where((annotation) => annotation.type == _AnnotationType.highlight)
+        .toList();
+    final highlight = highlights.isEmpty ? null : highlights.last;
+    final underlines = annotations
+        .where((annotation) => annotation.type == _AnnotationType.underline)
+        .toList();
+    final underline = underlines.isEmpty ? null : underlines.last;
+    final inkMarks = annotations
+        .where((annotation) => annotation.type == _AnnotationType.inkMark)
+        .toList();
+    final comments = annotations
+        .where(
+          (annotation) =>
+              annotation.type == _AnnotationType.comment ||
+              annotation.type == _AnnotationType.note,
+        )
+        .toList();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: highlight?.color.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$lineNumber',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      decoration: underline == null
+                          ? TextDecoration.none
+                          : TextDecoration.underline,
+                      decorationColor: underline?.color,
+                      decorationThickness: underline == null
+                          ? null
+                          : (underline.strokeWidth / 2).clamp(1.5, 4),
+                    ),
+                  ),
+                ),
+                if (inkMarks.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final mark in inkMarks) _InkMark(annotation: mark),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (comments.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 40, top: 4),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final comment in comments)
+                    _AnnotationChip(annotation: comment),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InkMark extends StatelessWidget {
+  const _InkMark({required this.annotation});
+
+  final _ScriptAnnotation annotation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: -0.12,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: annotation.color.withValues(alpha: 0.75),
+              width: (annotation.strokeWidth / 2).clamp(1.5, 4),
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            annotation.text,
+            style: TextStyle(
+              color: annotation.color,
+              fontSize: (16 + annotation.strokeWidth * 2).clamp(18, 30),
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnotationChip extends StatelessWidget {
+  const _AnnotationChip({required this.annotation});
+
+  final _ScriptAnnotation annotation;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: annotation.color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: annotation.color.withValues(alpha: 0.6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          '${annotation.type.label}: ${annotation.text}',
+          style: TextStyle(
+            color: annotation.color,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExamScoreSummary extends StatelessWidget {
+  const _ExamScoreSummary({required this.item, required this.total});
+
+  final _ExamMarkingSample item;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Score confirmation',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _MiniPill(label: 'Objective ${item.objectiveScore}'),
+            _MiniPill(label: 'Theory ${item.theoryScore}'),
+            _MiniPill(label: 'Practical ${item.practicalScore}'),
+            _MiniPill(label: 'Total $total/${item.maxScore}'),
+            _MiniPill(label: item.markingGuide),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          initialValue: item.note,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Examiner summary comment',
+            prefixIcon: Icon(Icons.comment_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Save annotations'),
+            ),
+            FilledButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.publish_outlined),
+              label: const Text('Submit marked script'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ScoreFields extends StatelessWidget {
+  const _ScoreFields({required this.fields});
+
+  final List<_ScoreField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final field in fields)
+          SizedBox(
+            width: 150,
+            child: TextFormField(
+              initialValue: field.initialValue,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: field.label),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ScoreField {
+  const _ScoreField(this.label, this.initialValue);
+
+  final String label;
+  final String initialValue;
+}
+
+class _SubmissionReviewTile extends StatelessWidget {
+  const _SubmissionReviewTile({required this.item, required this.onOpen});
+
+  final _SubmissionReviewItem item;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -271,52 +1546,76 @@ class _SubmissionReviewTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: flagged ? scheme.error.withValues(alpha: 0.4) : scheme.outlineVariant),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          alignment: WrapAlignment.spaceBetween,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${item.student} • ${item.matricNo}', style: const TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text('${item.courseCode} • Submitted ${item.submittedAt}', style: TextStyle(color: scheme.onSurfaceVariant)),
-              ]),
-            ),
-            _StatusBadge(text: item.integrityStatus, color: statusColor),
-          ],
+        border: Border.all(
+          color: flagged
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
         ),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: 'Score ${item.score}/${item.maxScore}'),
-          _MiniPill(label: item.rubricStatus),
-          _MiniPill(label: item.integrityStatus),
-        ]),
-        const SizedBox(height: 10),
-        Text(item.feedback, style: TextStyle(color: scheme.onSurfaceVariant)),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.file_open_outlined),
-            label: const Text('Open submission'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.student} • ${item.matricNo}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.courseCode} • Submitted ${item.submittedAt}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: item.integrityStatus, color: statusColor),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_note_outlined),
-            label: const Text('Grade'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: 'Score ${item.score}/${item.maxScore}'),
+              _MiniPill(label: item.rubricStatus),
+              _MiniPill(label: item.integrityStatus),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.feedback_outlined),
-            label: const Text('Send feedback'),
+          const SizedBox(height: 10),
+          Text(item.feedback, style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.file_open_outlined),
+                label: const Text('Open submission'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.edit_note_outlined),
+                label: const Text('Grade'),
+              ),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.feedback_outlined),
+                label: const Text('Send feedback'),
+              ),
+            ],
           ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -342,10 +1641,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -360,7 +1665,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -413,4 +1721,32 @@ class _SubmissionReviewItem {
   final String rubricStatus;
   final String integrityStatus;
   final String feedback;
+}
+
+class _ExamMarkingSample {
+  const _ExamMarkingSample({
+    required this.courseCode,
+    required this.examTitle,
+    required this.candidateNo,
+    required this.student,
+    required this.objectiveScore,
+    required this.theoryScore,
+    required this.practicalScore,
+    required this.maxScore,
+    required this.markingGuide,
+    required this.status,
+    required this.note,
+  });
+
+  final String courseCode;
+  final String examTitle;
+  final String candidateNo;
+  final String student;
+  final int objectiveScore;
+  final int theoryScore;
+  final int practicalScore;
+  final int maxScore;
+  final String markingGuide;
+  final String status;
+  final String note;
 }

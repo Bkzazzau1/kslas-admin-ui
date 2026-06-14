@@ -8,12 +8,23 @@ class NoticePublishingPanel extends StatefulWidget {
 }
 
 class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
-  final _titleController = TextEditingController(text: 'Exam briefing for 300 Level Software Engineering');
-  final _bodyController = TextEditingController(text: 'All concerned students should attend the exam briefing by 10:00am. Attendance is compulsory.');
-  final _referenceController = TextEditingController(text: 'EXAM-OFFICE/2026/001');
+  final _titleController = TextEditingController(
+    text: 'Exam briefing for 300 Level Software Engineering',
+  );
+  final _bodyController = TextEditingController(
+    text:
+        'All concerned students should attend the exam briefing by 10:00am. Attendance is compulsory.',
+  );
+  final _referenceController = TextEditingController(
+    text: 'EXAM-OFFICE/2026/001',
+  );
   final _departmentController = TextEditingController(text: 'dept-computing');
-  final _programmeController = TextEditingController(text: 'bsc-software-engineering');
-  final _cohortController = TextEditingController(text: 'cohort-bsc-se-2023-regular');
+  final _programmeController = TextEditingController(
+    text: 'bsc-software-engineering',
+  );
+  final _cohortController = TextEditingController(
+    text: 'cohort-bsc-se-2023-regular',
+  );
   final _courseController = TextEditingController();
 
   String _authorRole = 'Exam Officer';
@@ -78,7 +89,9 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
                 Expanded(
                   child: Text(
                     'Notice Publishing',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 FilledButton.icon(
@@ -94,9 +107,18 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
               runSpacing: 10,
               children: const [
                 _NoticeChip(label: 'Drafts: 5', icon: Icons.edit_note_outlined),
-                _NoticeChip(label: 'Published: 24', icon: Icons.check_circle_outline),
-                _NoticeChip(label: 'Needs acknowledgement: 9', icon: Icons.how_to_reg_outlined),
-                _NoticeChip(label: 'Archived: 11', icon: Icons.archive_outlined),
+                _NoticeChip(
+                  label: 'Published: 24',
+                  icon: Icons.check_circle_outline,
+                ),
+                _NoticeChip(
+                  label: 'Needs acknowledgement: 9',
+                  icon: Icons.how_to_reg_outlined,
+                ),
+                _NoticeChip(
+                  label: 'Archived: 11',
+                  icon: Icons.archive_outlined,
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -118,11 +140,14 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
                   requiresAcknowledgement: _requiresAcknowledgement,
                   pinned: _pinned,
                   onTextChanged: () => setState(() {}),
-                  onAuthorChanged: (value) => setState(() => _authorRole = value),
+                  onAuthorChanged: (value) =>
+                      setState(() => _authorRole = value),
                   onScopeChanged: (value) => setState(() => _scope = value),
                   onLevelChanged: (value) => setState(() => _level = value),
-                  onSemesterChanged: (value) => setState(() => _semester = value),
-                  onAcknowledgementChanged: (value) => setState(() => _requiresAcknowledgement = value),
+                  onSemesterChanged: (value) =>
+                      setState(() => _semester = value),
+                  onAcknowledgementChanged: (value) =>
+                      setState(() => _requiresAcknowledgement = value),
                   onPinnedChanged: (value) => setState(() => _pinned = value),
                 );
                 final preview = _NoticePreview(
@@ -145,16 +170,21 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
                     ],
                   );
                 }
-                return Column(children: [editor, const SizedBox(height: 16), preview]);
+                return Column(
+                  children: [editor, const SizedBox(height: 16), preview],
+                );
               },
             ),
             const SizedBox(height: 18),
             Text(
               'Recently published notices',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            for (final notice in _published) _PublishedNoticeTile(notice: notice),
+            for (final notice in _published)
+              _PublishedNoticeTile(notice: notice),
           ],
         ),
       ),
@@ -163,13 +193,23 @@ class _NoticePublishingPanelState extends State<NoticePublishingPanel> {
 
   String get _targetSummary {
     if (_scope == 'General') return 'All students';
-    if (_scope == 'Course') return _courseController.text.trim().isEmpty ? 'Selected course students' : '${_courseController.text.trim()} registered students';
+    if (_scope == 'Course') {
+      return _courseController.text.trim().isEmpty
+          ? 'Selected course students'
+          : '${_courseController.text.trim()} registered students';
+    }
     final pieces = <String>[];
-    if (_departmentController.text.trim().isNotEmpty) pieces.add(_departmentController.text.trim());
-    if (_programmeController.text.trim().isNotEmpty) pieces.add(_programmeController.text.trim());
+    if (_departmentController.text.trim().isNotEmpty) {
+      pieces.add(_departmentController.text.trim());
+    }
+    if (_programmeController.text.trim().isNotEmpty) {
+      pieces.add(_programmeController.text.trim());
+    }
     if (_level != null) pieces.add('$_level Level');
     if (_semester != null) pieces.add('Semester $_semester');
-    if (_cohortController.text.trim().isNotEmpty) pieces.add(_cohortController.text.trim());
+    if (_cohortController.text.trim().isNotEmpty) {
+      pieces.add(_cohortController.text.trim());
+    }
     return pieces.isEmpty ? 'Targeted students' : pieces.join(' • ');
   }
 
@@ -231,14 +271,20 @@ class _NoticeEditor extends StatelessWidget {
       children: [
         TextFormField(
           controller: titleController,
-          decoration: const InputDecoration(labelText: 'Notice title', prefixIcon: Icon(Icons.title_outlined)),
+          decoration: const InputDecoration(
+            labelText: 'Notice title',
+            prefixIcon: Icon(Icons.title_outlined),
+          ),
           onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: bodyController,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notice body', prefixIcon: Icon(Icons.notes_outlined)),
+          decoration: const InputDecoration(
+            labelText: 'Notice body',
+            prefixIcon: Icon(Icons.notes_outlined),
+          ),
           onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 10),
@@ -249,30 +295,52 @@ class _NoticeEditor extends StatelessWidget {
             SizedBox(
               width: 260,
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: authorRole,
                 items: const [
                   DropdownMenuItem(value: 'Lecturer', child: Text('Lecturer')),
-                  DropdownMenuItem(value: 'Exam Officer', child: Text('Exam Officer')),
-                  DropdownMenuItem(value: 'Records Department', child: Text('Records Department')),
-                  DropdownMenuItem(value: 'Department Admin', child: Text('Department Admin')),
+                  DropdownMenuItem(
+                    value: 'Exam Officer',
+                    child: Text('Exam Officer'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Records Department',
+                    child: Text('Records Department'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Department Admin',
+                    child: Text('Department Admin'),
+                  ),
                 ],
-                onChanged: (value) => value == null ? null : onAuthorChanged(value),
+                onChanged: (value) =>
+                    value == null ? null : onAuthorChanged(value),
                 decoration: const InputDecoration(labelText: 'Publishing role'),
               ),
             ),
             SizedBox(
               width: 260,
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: scope,
                 items: const [
                   DropdownMenuItem(value: 'General', child: Text('General')),
-                  DropdownMenuItem(value: 'Department', child: Text('Department')),
-                  DropdownMenuItem(value: 'Programme', child: Text('Programme')),
-                  DropdownMenuItem(value: 'Level', child: Text('Level / Semester')),
+                  DropdownMenuItem(
+                    value: 'Department',
+                    child: Text('Department'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Programme',
+                    child: Text('Programme'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Level',
+                    child: Text('Level / Semester'),
+                  ),
                   DropdownMenuItem(value: 'Cohort', child: Text('Cohort')),
                   DropdownMenuItem(value: 'Course', child: Text('Course')),
                 ],
-                onChanged: (value) => value == null ? null : onScopeChanged(value),
+                onChanged: (value) =>
+                    value == null ? null : onScopeChanged(value),
                 decoration: const InputDecoration(labelText: 'Target scope'),
               ),
             ),
@@ -294,7 +362,10 @@ class _NoticeEditor extends StatelessWidget {
         const SizedBox(height: 10),
         TextFormField(
           controller: referenceController,
-          decoration: const InputDecoration(labelText: 'Reference / memo number', prefixIcon: Icon(Icons.tag_outlined)),
+          decoration: const InputDecoration(
+            labelText: 'Reference / memo number',
+            prefixIcon: Icon(Icons.tag_outlined),
+          ),
           onChanged: (_) => onTextChanged(),
         ),
         const SizedBox(height: 8),
@@ -302,7 +373,9 @@ class _NoticeEditor extends StatelessWidget {
           value: requiresAcknowledgement,
           onChanged: onAcknowledgementChanged,
           title: const Text('Require student acknowledgement'),
-          subtitle: const Text('Track students who have read and acknowledged this notice.'),
+          subtitle: const Text(
+            'Track students who have read and acknowledged this notice.',
+          ),
         ),
         SwitchListTile(
           value: pinned,
@@ -345,14 +418,20 @@ class _TargetFields extends StatelessWidget {
     if (scope == 'General') {
       return const Align(
         alignment: Alignment.centerLeft,
-        child: Chip(avatar: Icon(Icons.public_outlined), label: Text('Visible to all students')),
+        child: Chip(
+          avatar: Icon(Icons.public_outlined),
+          label: Text('Visible to all students'),
+        ),
       );
     }
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: [
-        if (scope == 'Department' || scope == 'Programme' || scope == 'Level' || scope == 'Cohort')
+        if (scope == 'Department' ||
+            scope == 'Programme' ||
+            scope == 'Level' ||
+            scope == 'Cohort')
           SizedBox(
             width: 260,
             child: TextFormField(
@@ -374,6 +453,7 @@ class _TargetFields extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<int?>(
+              isExpanded: true,
               initialValue: level,
               items: const [
                 DropdownMenuItem(value: null, child: Text('All levels')),
@@ -391,6 +471,7 @@ class _TargetFields extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<int?>(
+              isExpanded: true,
               initialValue: semester,
               items: const [
                 DropdownMenuItem(value: null, child: Text('All semesters')),
@@ -416,7 +497,10 @@ class _TargetFields extends StatelessWidget {
             width: 260,
             child: TextFormField(
               controller: courseController,
-              decoration: const InputDecoration(labelText: 'Course code', hintText: 'CSC 305'),
+              decoration: const InputDecoration(
+                labelText: 'Course code',
+                hintText: 'CSC 305',
+              ),
               onChanged: (_) => onTextChanged(),
             ),
           ),
@@ -456,24 +540,62 @@ class _NoticePreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Student notice preview', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _PreviewPill(label: scope, icon: Icons.center_focus_strong_outlined),
-          _PreviewPill(label: authorRole, icon: Icons.account_circle_outlined),
-          if (pinned) const _PreviewPill(label: 'Pinned', icon: Icons.push_pin_outlined),
-          if (requiresAcknowledgement) const _PreviewPill(label: 'Ack required', icon: Icons.how_to_reg_outlined),
-        ]),
-        const SizedBox(height: 14),
-        Text(title.isEmpty ? 'Untitled notice' : title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-        const SizedBox(height: 8),
-        Text(body.isEmpty ? 'Notice body will appear here.' : body),
-        const SizedBox(height: 12),
-        Text('Target: $targetSummary', style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text('Reference: ${reference.isEmpty ? 'Not set' : reference}', style: TextStyle(color: scheme.onSurfaceVariant)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Student notice preview',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _PreviewPill(
+                label: scope,
+                icon: Icons.center_focus_strong_outlined,
+              ),
+              _PreviewPill(
+                label: authorRole,
+                icon: Icons.account_circle_outlined,
+              ),
+              if (pinned)
+                const _PreviewPill(
+                  label: 'Pinned',
+                  icon: Icons.push_pin_outlined,
+                ),
+              if (requiresAcknowledgement)
+                const _PreviewPill(
+                  label: 'Ack required',
+                  icon: Icons.how_to_reg_outlined,
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title.isEmpty ? 'Untitled notice' : title,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(body.isEmpty ? 'Notice body will appear here.' : body),
+          const SizedBox(height: 12),
+          Text(
+            'Target: $targetSummary',
+            style: TextStyle(
+              color: scheme.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Reference: ${reference.isEmpty ? 'Not set' : reference}',
+            style: TextStyle(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -493,29 +615,42 @@ class _PublishedNoticeTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(Icons.campaign_outlined, color: scheme.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(notice.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text('${notice.scope} • ${notice.target} • ${notice.source}'),
-            const SizedBox(height: 6),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _MiniPill(label: notice.status),
-              _MiniPill(label: notice.acknowledgements),
-            ]),
-          ]),
-        ),
-        PopupMenuButton<String>(
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'edit', child: Text('Edit')),
-            PopupMenuItem(value: 'archive', child: Text('Archive')),
-            PopupMenuItem(value: 'acks', child: Text('Acknowledgements')),
-          ],
-        ),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.campaign_outlined, color: scheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notice.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text('${notice.scope} • ${notice.target} • ${notice.source}'),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MiniPill(label: notice.status),
+                    _MiniPill(label: notice.acknowledgements),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'archive', child: Text('Archive')),
+              PopupMenuItem(value: 'acks', child: Text('Acknowledgements')),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -553,7 +688,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),

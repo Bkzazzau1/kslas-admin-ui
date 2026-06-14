@@ -4,7 +4,8 @@ class ExamSessionsOverviewPanel extends StatefulWidget {
   const ExamSessionsOverviewPanel({super.key});
 
   @override
-  State<ExamSessionsOverviewPanel> createState() => _ExamSessionsOverviewPanelState();
+  State<ExamSessionsOverviewPanel> createState() =>
+      _ExamSessionsOverviewPanelState();
 }
 
 class _ExamSessionsOverviewPanelState extends State<ExamSessionsOverviewPanel> {
@@ -36,7 +37,8 @@ class _ExamSessionsOverviewPanelState extends State<ExamSessionsOverviewPanel> {
       escalatedReports: 3,
       risk: 'High',
       status: 'Live',
-      note: 'Review repeated face-away and device-change reports before closure.',
+      note:
+          'Review repeated face-away and device-change reports before closure.',
     ),
     _SessionSummary(
       session: 'Hybrid Practical Session',
@@ -58,7 +60,8 @@ class _ExamSessionsOverviewPanelState extends State<ExamSessionsOverviewPanel> {
       title: 'Escalated CSC 309 proctoring reports',
       owner: 'Chief Invigilator',
       scope: 'DLC Online Proctoring Group A',
-      reason: 'Multiple high-confidence events were reported within the same candidate session.',
+      reason:
+          'Multiple high-confidence events were reported within the same candidate session.',
       status: 'Escalated',
       severity: 'High',
       time: 'Today, 10:38',
@@ -67,7 +70,8 @@ class _ExamSessionsOverviewPanelState extends State<ExamSessionsOverviewPanel> {
       title: 'CBT Centre 1 sign-off pending',
       owner: 'Chief Invigilator',
       scope: 'Morning CBT Block',
-      reason: 'Two app ID exceptions require exam officer review before room sign-off.',
+      reason:
+          'Two app ID exceptions require exam officer review before room sign-off.',
       status: 'Pending',
       severity: 'Medium',
       time: 'Today, 10:44',
@@ -87,83 +91,135 @@ class _ExamSessionsOverviewPanelState extends State<ExamSessionsOverviewPanel> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final filtered = _sessions
-        .where((session) => _selectedRisk == 'All' || session.risk == _selectedRisk)
-        .where((session) => _selectedMode == 'All' || session.mode == _selectedMode)
+        .where(
+          (session) => _selectedRisk == 'All' || session.risk == _selectedRisk,
+        )
+        .where(
+          (session) => _selectedMode == 'All' || session.mode == _selectedMode,
+        )
         .toList();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.sensors_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Chief Invigilator / Exam Sessions Overview',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.sensors_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Chief Invigilator / Exam Sessions Overview',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.task_alt_outlined),
+                  label: const Text('Session sign-off'),
+                ),
+              ],
             ),
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.task_alt_outlined),
-              label: const Text('Session sign-off'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _OverviewChip(
+                  label: 'Live sessions: 15',
+                  icon: Icons.play_circle_outline,
+                ),
+                _OverviewChip(
+                  label: 'Rooms/groups: 42',
+                  icon: Icons.meeting_room_outlined,
+                ),
+                _OverviewChip(
+                  label: 'Open reports: 24',
+                  icon: Icons.report_problem_outlined,
+                ),
+                _OverviewChip(
+                  label: 'Escalated: 7',
+                  icon: Icons.priority_high_outlined,
+                ),
+                _OverviewChip(
+                  label: 'Pending sign-off: 4',
+                  icon: Icons.pending_actions_outlined,
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: const [
-            _OverviewChip(label: 'Live sessions: 15', icon: Icons.play_circle_outline),
-            _OverviewChip(label: 'Rooms/groups: 42', icon: Icons.meeting_room_outlined),
-            _OverviewChip(label: 'Open reports: 24', icon: Icons.report_problem_outlined),
-            _OverviewChip(label: 'Escalated: 7', icon: Icons.priority_high_outlined),
-            _OverviewChip(label: 'Pending sign-off: 4', icon: Icons.pending_actions_outlined),
-          ]),
-          const SizedBox(height: 16),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(
-              width: 220,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedRisk,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All risk levels')),
-                  DropdownMenuItem(value: 'High', child: Text('High')),
-                  DropdownMenuItem(value: 'Medium', child: Text('Medium')),
-                  DropdownMenuItem(value: 'Low', child: Text('Low')),
-                ],
-                onChanged: (value) => setState(() => _selectedRisk = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Risk'),
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 220,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedRisk,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All risk levels'),
+                      ),
+                      DropdownMenuItem(value: 'High', child: Text('High')),
+                      DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                      DropdownMenuItem(value: 'Low', child: Text('Low')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedRisk = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Risk'),
+                  ),
+                ),
+                SizedBox(
+                  width: 240,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedMode,
+                    items: const [
+                      DropdownMenuItem(value: 'All', child: Text('All modes')),
+                      DropdownMenuItem(
+                        value: 'CBT Centre',
+                        child: Text('CBT Centre'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Distance Learning',
+                        child: Text('Distance Learning'),
+                      ),
+                      DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedMode = value ?? 'All'),
+                    decoration: const InputDecoration(labelText: 'Mode'),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 240,
-              child: DropdownButtonFormField<String>(
-                initialValue: _selectedMode,
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All modes')),
-                  DropdownMenuItem(value: 'CBT Centre', child: Text('CBT Centre')),
-                  DropdownMenuItem(value: 'Distance Learning', child: Text('Distance Learning')),
-                  DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                ],
-                onChanged: (value) => setState(() => _selectedMode = value ?? 'All'),
-                decoration: const InputDecoration(labelText: 'Mode'),
-              ),
+            const SizedBox(height: 18),
+            Text(
+              'Session overview',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-          ]),
-          const SizedBox(height: 18),
-          Text(
-            'Session overview',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final session in filtered) _SessionSummaryTile(session: session),
-          const SizedBox(height: 18),
-          Text(
-            'Escalation and sign-off reviews',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (final review in _reviews) _SessionReviewTile(review: review),
-        ]),
+            const SizedBox(height: 10),
+            for (final session in filtered)
+              _SessionSummaryTile(session: session),
+            const SizedBox(height: 18),
+            Text(
+              'Escalation and sign-off reviews',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final review in _reviews) _SessionReviewTile(review: review),
+          ],
+        ),
       ),
     );
   }
@@ -180,71 +236,122 @@ class _SessionSummaryTile extends StatelessWidget {
     final riskColor = session.risk == 'High'
         ? scheme.error
         : session.risk == 'Medium'
-            ? scheme.secondary
-            : scheme.primary;
-    final checkInProgress = session.candidates == 0 ? 0.0 : session.checkedIn / session.candidates;
-    final syncProgress = session.candidates == 0 ? 0.0 : session.submissionsSynced / session.candidates;
+        ? scheme.secondary
+        : scheme.primary;
+    final checkInProgress = session.candidates == 0
+        ? 0.0
+        : session.checkedIn / session.candidates;
+    final syncProgress = session.candidates == 0
+        ? 0.0
+        : session.submissionsSynced / session.candidates;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: session.risk == 'High' ? scheme.error.withValues(alpha: 0.4) : scheme.outlineVariant),
+        border: Border.all(
+          color: session.risk == 'High'
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant,
+        ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${session.session} • ${session.mode}', style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text('${session.rooms} rooms/groups • ${session.status}', style: TextStyle(color: scheme.onSurfaceVariant)),
-            ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${session.session} • ${session.mode}',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${session.rooms} rooms/groups • ${session.status}',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: session.risk, color: riskColor),
+            ],
           ),
-          _StatusBadge(text: session.risk, color: riskColor),
-        ]),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MiniPill(label: '${session.checkedIn}/${session.candidates} checked in'),
-          _MiniPill(label: '${session.submissionsSynced} submissions synced'),
-          _MiniPill(label: '${session.openReports} open reports'),
-          _MiniPill(label: '${session.escalatedReports} escalated'),
-        ]),
-        const SizedBox(height: 10),
-        Text(session.note, style: TextStyle(color: scheme.onSurfaceVariant)),
-        const SizedBox(height: 12),
-        Text('Check-in progress', style: Theme.of(context).textTheme.labelMedium),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(value: checkInProgress, minHeight: 6, borderRadius: BorderRadius.circular(999)),
-        const SizedBox(height: 10),
-        Text('Submission sync progress', style: Theme.of(context).textTheme.labelMedium),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(value: syncProgress, minHeight: 6, borderRadius: BorderRadius.circular(999)),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.dashboard_customize_outlined),
-            label: const Text('Open rooms'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(
+                label: '${session.checkedIn}/${session.candidates} checked in',
+              ),
+              _MiniPill(
+                label: '${session.submissionsSynced} submissions synced',
+              ),
+              _MiniPill(label: '${session.openReports} open reports'),
+              _MiniPill(label: '${session.escalatedReports} escalated'),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.report_problem_outlined),
-            label: const Text('Review reports'),
+          const SizedBox(height: 10),
+          Text(session.note, style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Text(
+            'Check-in progress',
+            style: Theme.of(context).textTheme.labelMedium,
           ),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.pause_circle_outline),
-            label: const Text('Hold sign-off'),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: checkInProgress,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(999),
           ),
-          FilledButton.icon(
-            onPressed: session.risk == 'High' ? null : () {},
-            icon: const Icon(Icons.task_alt_outlined),
-            label: const Text('Approve sign-off'),
+          const SizedBox(height: 10),
+          Text(
+            'Submission sync progress',
+            style: Theme.of(context).textTheme.labelMedium,
           ),
-        ]),
-      ]),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: syncProgress,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                label: const Text('Open rooms'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.report_problem_outlined),
+                label: const Text('Review reports'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.pause_circle_outline),
+                label: const Text('Hold sign-off'),
+              ),
+              FilledButton.icon(
+                onPressed: session.risk == 'High' ? null : () {},
+                icon: const Icon(Icons.task_alt_outlined),
+                label: const Text('Approve sign-off'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -260,8 +367,8 @@ class _SessionReviewTile extends StatelessWidget {
     final severityColor = review.severity == 'High'
         ? scheme.error
         : review.severity == 'Medium'
-            ? scheme.secondary
-            : scheme.primary;
+        ? scheme.secondary
+        : scheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -269,7 +376,10 @@ class _SessionReviewTile extends StatelessWidget {
         foregroundColor: severityColor,
         child: const Icon(Icons.verified_user_outlined),
       ),
-      title: Text('${review.title} • ${review.scope}', style: const TextStyle(fontWeight: FontWeight.w800)),
+      title: Text(
+        '${review.title} • ${review.scope}',
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
       subtitle: Text('${review.owner} • ${review.reason} • ${review.time}'),
       trailing: _StatusBadge(text: review.status, color: severityColor),
     );
@@ -297,10 +407,16 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -315,7 +431,10 @@ class _MiniPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
