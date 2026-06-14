@@ -7,6 +7,7 @@ import 'workspaces/academic_structure_panel.dart';
 import 'workspaces/cohort_management_panel.dart';
 import 'workspaces/course_registration_approval_panel.dart';
 import 'workspaces/exam_management_panel.dart';
+import 'workspaces/exam_sessions_overview_panel.dart';
 import 'workspaces/invigilator_operations_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
 import 'workspaces/moderator_question_review_panel.dart';
@@ -23,6 +24,7 @@ const _operationsPages = [
   _OpsPage('Course Registration', Icons.app_registration_outlined),
   _OpsPage('Assignments', Icons.assignment_ind_outlined),
   _OpsPage('Exams', Icons.assignment_outlined),
+  _OpsPage('Session Overview', Icons.sensors_outlined),
   _OpsPage('Invigilation', Icons.supervisor_account_outlined),
   _OpsPage('Results', Icons.workspace_premium_outlined),
   _OpsPage('Records', Icons.badge_outlined),
@@ -268,6 +270,9 @@ class _PrimaryPanel extends StatelessWidget {
     }
     if (pageLabel == 'Exams') {
       return const ExamManagementPanel();
+    }
+    if (pageLabel == 'Session Overview') {
+      return const ExamSessionsOverviewPanel();
     }
     if (pageLabel == 'Invigilation') {
       return const InvigilatorOperationsPanel();
