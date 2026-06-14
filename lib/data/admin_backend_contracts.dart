@@ -53,6 +53,20 @@ class AdminExamBackendPath {
   static const escalateIncident = '/api/v1/admin/exams/{examId}/incidents/{incidentId}/escalate';
 }
 
+class AdminPeopleBackendPath {
+  static const staffAccounts = '/api/v1/admin/staff';
+  static const createStaff = '/api/v1/admin/staff';
+  static const updateStaff = '/api/v1/admin/staff/{staffId}';
+  static const deactivateStaff = '/api/v1/admin/staff/{staffId}/deactivate';
+  static const reactivateStaff = '/api/v1/admin/staff/{staffId}/reactivate';
+  static const roleAssignments = '/api/v1/admin/staff/{staffId}/roles';
+  static const permissionOverrides = '/api/v1/admin/staff/{staffId}/permissions';
+  static const lecturerAllocations = '/api/v1/admin/staff/{staffId}/lecturer-allocations';
+  static const moderatorAllocations = '/api/v1/admin/staff/{staffId}/moderator-allocations';
+  static const invigilatorAllocations = '/api/v1/admin/staff/{staffId}/invigilator-allocations';
+  static const accessAuditLogs = '/api/v1/admin/staff/{staffId}/access-audit-logs';
+}
+
 class AdminCohortBackendPath {
   static const listCohorts = '/api/v1/admin/cohorts';
   static const createCohort = '/api/v1/admin/cohorts';
@@ -80,7 +94,7 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, carryover confirmation, result release, and registration approval must never be performed by the student app.',
   ];
 
   static const courseRegistrationApprovalRules = [
@@ -112,6 +126,15 @@ class AdminWorkflowContract {
     'An exam should open only when readiness checks pass: questions approved, venue configured, candidates mapped, invigilators assigned and security settings confirmed.',
     'Incidents from invigilators, proctoring alerts or candidate verification must be reviewable and escalatable inside the admin UI.',
     'Every schedule change, approval, open/close action and incident escalation must be audit logged.',
+  ];
+
+  static const peopleAccessRules = [
+    'Staff role assignment must be performed only by authorized department, faculty or super admin users.',
+    'Lecturer permissions must be restricted to assigned courses unless an explicit override is approved.',
+    'Moderator permissions must be restricted to assigned moderation batches or departments.',
+    'Invigilator permissions must be restricted to assigned halls, exam sessions and incidents.',
+    'Records department permissions are high-risk and must be audit logged for CGPA, transcript, cohort and student-record changes.',
+    'Every role grant, permission override, deactivation, reactivation and work allocation must be audit logged.',
   ];
 
   static const resultApprovalRules = [
