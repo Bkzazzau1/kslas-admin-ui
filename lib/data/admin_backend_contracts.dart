@@ -66,6 +66,21 @@ class AdminExamBackendPath {
   static const escalateIncident = '/api/v1/admin/exams/{examId}/incidents/{incidentId}/escalate';
 }
 
+class AdminInvigilationBackendPath {
+  static const rooms = '/api/v1/admin/invigilation/rooms';
+  static const roomDetail = '/api/v1/admin/invigilation/rooms/{roomId}';
+  static const candidateCheckIn = '/api/v1/admin/invigilation/rooms/{roomId}/check-in';
+  static const candidateCheckOut = '/api/v1/admin/invigilation/rooms/{roomId}/check-out';
+  static const workstationStatus = '/api/v1/admin/invigilation/rooms/{roomId}/workstations';
+  static const appIdStatus = '/api/v1/admin/invigilation/rooms/{roomId}/app-ids';
+  static const deviceStatus = '/api/v1/admin/invigilation/rooms/{roomId}/devices';
+  static const reportIncident = '/api/v1/admin/invigilation/rooms/{roomId}/incidents';
+  static const escalateIncident = '/api/v1/admin/invigilation/incidents/{incidentId}/escalate';
+  static const resolveIncident = '/api/v1/admin/invigilation/incidents/{incidentId}/resolve';
+  static const closeRoom = '/api/v1/admin/invigilation/rooms/{roomId}/close';
+  static const sessionAuditLogs = '/api/v1/admin/invigilation/sessions/{sessionId}/audit-logs';
+}
+
 class AdminPeopleBackendPath {
   static const staffAccounts = '/api/v1/admin/staff';
   static const createStaff = '/api/v1/admin/staff';
@@ -114,7 +129,7 @@ class AdminWorkflowContract {
     'Lecturer, moderator, invigilator, exam officer, records, department, faculty, HoD, level adviser and super admin workflows belong in kslas-admin-ui.',
     'The student app must only read student-visible data and submit student actions such as course registration, assignment submissions, exam attempts, acknowledgements and live-class participation.',
     'Admin APIs must derive staff role and permission from the authenticated token before exposing admin data.',
-    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
+    'Notice publishing, academic structure management, assignment creation, grading, question moderation, exam scheduling, question approval, invigilator assignment, invigilation operations, staff role assignment, cohort creation, cohort promotion, carryover confirmation, result release, and registration approval must never be performed by the student app.',
   ];
 
   static const academicStructureRules = [
@@ -163,6 +178,14 @@ class AdminWorkflowContract {
     'An exam should open only when readiness checks pass: questions approved, venue configured, candidates mapped, invigilators assigned and security settings confirmed.',
     'Incidents from invigilators, proctoring alerts or candidate verification must be reviewable and escalatable inside the admin UI.',
     'Every schedule change, approval, open/close action and incident escalation must be audit logged.',
+  ];
+
+  static const invigilationRules = [
+    'Invigilators may operate only assigned rooms, halls or online proctoring groups for the current exam session.',
+    'Candidate check-in must verify the exam, room, seat, identity status and whitelisted workstation or app ID before admission.',
+    'Workstation, device, app ID and network status are monitoring signals for operations and must not be controlled by the student app.',
+    'Incidents and malpractice reports must be created, escalated, resolved and audited inside the admin UI.',
+    'Room closure should require candidate count reconciliation, submission sync status, incident review and invigilator sign-off.',
   ];
 
   static const peopleAccessRules = [
