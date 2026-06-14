@@ -14,6 +14,7 @@ import 'workspaces/moderator_question_review_panel.dart';
 import 'workspaces/notice_publishing_panel.dart';
 import 'workspaces/people_access_control_panel.dart';
 import 'workspaces/records_department_panel.dart';
+import 'workspaces/reports_analytics_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
 import 'workspaces/student_support_helpdesk_panel.dart';
 
@@ -32,6 +33,7 @@ const _operationsPages = [
   _OpsPage('Approvals', Icons.fact_check_outlined),
   _OpsPage('People', Icons.groups_outlined),
   _OpsPage('Support', Icons.support_agent_outlined),
+  _OpsPage('Reports', Icons.analytics_outlined),
 ];
 
 class AdminOperationsShell extends StatefulWidget {
@@ -293,6 +295,9 @@ class _PrimaryPanel extends StatelessWidget {
     }
     if (pageLabel == 'Support') {
       return const StudentSupportHelpdeskPanel();
+    }
+    if (pageLabel == 'Reports') {
+      return const ReportsAnalyticsPanel();
     }
     return _TaskPanel(tasks: tasks);
   }
