@@ -12,6 +12,7 @@ import 'workspaces/dlc_director_overview_panel.dart';
 import 'workspaces/exam_management_panel.dart';
 import 'workspaces/exam_sessions_overview_panel.dart';
 import 'workspaces/hod_department_overview_panel.dart';
+import 'workspaces/invigilator_evidence_review_panel.dart';
 import 'workspaces/lecturer_assignments_marking_panel.dart';
 import 'workspaces/lecturer_course_delivery_flow_panel.dart';
 import 'workspaces/lecturer_course_overview_panel.dart';
@@ -346,36 +347,60 @@ class _AdminSideBar extends StatelessWidget {
               ),
               title: Text(
                 _workspaceTitleForRole(selectedRole),
-                style: TextStyle(fontWeight: FontWeight.w900),
+                style: const TextStyle(fontWeight: FontWeight.w900),
               ),
               subtitle: Text(_workspaceSubtitleForRole(selectedRole)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<AdminRole>(
+              initialValue: selectedRole,
+              decoration: const InputDecoration(
+                labelText: 'Workspace role',
+                prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+              ),
+              items: [
+                for (final role in AdminRole.values)
+                  DropdownMenuItem(value: role, child: Text(role.label)),
+              ],
+              onChanged: (role) {
+                if (role != null) onRoleChanged(role);
+              },
+            ),
+            const SizedBox(height: 16),
             for (var i = 0; i < pages.length; i++)
-              _NavTile(
-                label: pages[i].label,
-                icon: pages[i].icon,
+              NavigationTile(
+                page: pages[i],
                 selected: selectedPage == i,
                 onTap: () => onPageChanged(i),
-              ),
-            const Divider(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'Role view',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ),
-            const SizedBox(height: 8),
-            for (final role in AdminRole.values)
-              _RoleTile(
-                role: role,
-                selected: role == selectedRole,
-                onTap: () => onRoleChanged(role),
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class NavigationTile extends StatelessWidget {
+  const NavigationTile({
+    super.key,
+    required this.page,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _OpsPage page;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      selected: selected,
+      selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      leading: Icon(page.icon),
+      title: Text(page.label),
+      onTap: onTap,
     );
   }
 }
@@ -391,22 +416,22 @@ class _RoleDrawer extends StatelessWidget {
     return Drawer(
       child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           children: [
-            ListTile(
-              leading: Icon(_workspaceIconForRole(selectedRole)),
-              title: Text(_workspaceTitleForRole(selectedRole)),
-              subtitle: Text(_workspaceSubtitleForRole(selectedRole)),
-            ),
-            const Divider(),
+            Text('Switch workspace', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
             for (final role in AdminRole.values)
-              _RoleTile(
-                role: role,
-                selected: role == selectedRole,
-                onTap: () {
-                  Navigator.pop(context);
-                  onRoleChanged(role);
+              RadioListTile<AdminRole>(
+                value: role,
+                groupValue: selectedRole,
+                onChanged: (role) {
+                  if (role != null) {
+                    onRoleChanged(role);
+                    Navigator.of(context).maybePop();
+                  }
                 },
+                title: Text(role.label),
+                subtitle: Text(role.scope),
               ),
           ],
         ),
@@ -430,9 +455,9 @@ class _AdminOperationsWorkspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = repository.metricsFor(selectedRole);
-    final workflows = repository.workflowsFor(pageLabel, role: selectedRole);
-    final tasks = repository.tasksFor(selectedRole, pageLabel: pageLabel);
+    final metrics = repository.metricsForRole(selectedRole);
+    final tasks = repository.tasksForRole(selectedRole);
+    final workflows = repository.workflowForRole(selectedRole);
     final width = MediaQuery.sizeOf(context).width;
 
     return SafeArea(
@@ -570,7 +595,10 @@ class _PrimaryPanel extends StatelessWidget {
         return const ResultsApprovalReleasePanel();
       }
       if (pageLabel == 'Invigilation / Proctoring' ||
-          pageLabel == 'Exam Attendance') {
+          pageLabel == 'Malpractice Reports') {
+        return InvigilatorEvidenceReviewPanel(section: pageLabel);
+      }
+      if (pageLabel == 'Exam Attendance') {
         return const ExamSessionsOverviewPanel();
       }
       return _TaskPanel(tasks: tasks);
@@ -769,114 +797,12 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final statusColor = task.status.color(scheme);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(task.ownerRole.icon, color: statusColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(task.description),
-                const SizedBox(height: 4),
-                Text(
-                  '${task.ownerRole.label} • ${task.due}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          _StatusPill(status: task.status),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status});
-
-  final WorkStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = status.color(Theme.of(context).colorScheme);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          status.label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w700),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleTile extends StatelessWidget {
-  const _RoleTile({
-    required this.role,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AdminRole role;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
     return ListTile(
-      selected: selected,
-      selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      leading: Icon(role.icon),
-      title: Text(role.label),
-      subtitle: Text(role.scope, maxLines: 2, overflow: TextOverflow.ellipsis),
-      onTap: onTap,
-    );
-  }
-}
-
-class _NavTile extends StatelessWidget {
-  const _NavTile({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        selected: selected,
-        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(icon),
-        title: Text(label),
-        onTap: onTap,
-      ),
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(child: Icon(task.icon)),
+      title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text('${task.owner} • ${task.due}'),
+      trailing: Text(task.status),
     );
   }
 }
