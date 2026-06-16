@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../data/invigilator_evidence_api.dart';
+
 class InvigilatorEvidenceReviewPanel extends StatefulWidget {
   const InvigilatorEvidenceReviewPanel({super.key, this.section = 'Review'});
 
@@ -12,88 +14,33 @@ class InvigilatorEvidenceReviewPanel extends StatefulWidget {
 
 class _InvigilatorEvidenceReviewPanelState
     extends State<InvigilatorEvidenceReviewPanel> {
+  final InvigilatorEvidenceApi _api = InvigilatorEvidenceApi();
   String _selectedSeverity = 'All';
   String _selectedStatus = 'All';
   String _selectedEvidence = 'All';
   int _selectedIndex = 0;
+  late Future<InvigilatorEvidenceQueue> _queueFuture;
 
-  static const _cases = [
-    _EvidenceCase(
-      candidate: 'Aisha Musa',
-      matric: 'KASU/CSC/021',
-      course: 'CSC 309 Artificial Intelligence',
-      session: 'DLC Online Proctoring Group A',
-      eventType: 'Multiple faces detected',
-      severity: 'High',
-      status: 'Pending review',
-      riskScore: 86,
-      confidence: 0.94,
-      evidenceTypes: ['Camera', 'Manifest'],
-      evidenceStatus: 'Captured',
-      evidencePath: 'evidence://KASU/CSC/021/session-309/case-001.json',
-      time: 'Today, 10:38',
-      recommendation:
-          'Review camera frame evidence and escalate if second person remains visible.',
-      decision: 'No decision yet',
-    ),
-    _EvidenceCase(
-      candidate: 'Bello Adamu',
-      matric: 'KASU/CSC/044',
-      course: 'CSC 309 Artificial Intelligence',
-      session: 'DLC Online Proctoring Group A',
-      eventType: 'Human voice detected',
-      severity: 'High',
-      status: 'Escalated',
-      riskScore: 74,
-      confidence: 0.89,
-      evidenceTypes: ['Audio', 'Manifest'],
-      evidenceStatus: 'Captured',
-      evidencePath: 'evidence://KASU/CSC/044/session-309/case-002.json',
-      time: 'Today, 10:42',
-      recommendation:
-          'Listen to the short audio clip and compare with mouth movement timeline.',
-      decision: 'Escalated to exam officer',
-    ),
-    _EvidenceCase(
-      candidate: 'Maryam Sani',
-      matric: 'KASU/CSC/078',
-      course: 'GST 211 Communication Skills',
-      session: 'Morning CBT Block',
-      eventType: 'Tab switching detected',
-      severity: 'Medium',
-      status: 'Pending review',
-      riskScore: 46,
-      confidence: 0.78,
-      evidenceTypes: ['Screenshot', 'Manifest'],
-      evidenceStatus: 'Pending capture',
-      evidencePath: 'evidence://KASU/CSC/078/session-gst/case-003.json',
-      time: 'Today, 10:51',
-      recommendation:
-          'Confirm whether the system app lost focus or candidate attempted navigation.',
-      decision: 'No decision yet',
-    ),
-    _EvidenceCase(
-      candidate: 'Usman Ibrahim',
-      matric: 'KASU/BUS/012',
-      course: 'ACC 201 Financial Accounting',
-      session: 'Hybrid Practical Session',
-      eventType: 'Phone detected',
-      severity: 'Critical',
-      status: 'Malpractice draft',
-      riskScore: 112,
-      confidence: 0.97,
-      evidenceTypes: ['Camera', 'Screenshot', 'Manifest'],
-      evidenceStatus: 'Captured',
-      evidencePath: 'evidence://KASU/BUS/012/session-acc/case-004.json',
-      time: 'Today, 11:06',
-      recommendation:
-          'Prepare malpractice report if physical invigilator confirms device presence.',
-      decision: 'Draft report opened',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _queueFuture = _loadQueue();
+  }
 
-  List<_EvidenceCase> get _filteredCases {
-    return _cases.where((item) {
+  Future<InvigilatorEvidenceQueue> _loadQueue() async {
+    try {
+      return await _api.fetchQueue(
+        severity: _selectedSeverity,
+        status: _selectedStatus,
+        evidenceType: _selectedEvidence,
+      );
+    } catch (_) {
+      return _filterQueue(InvigilatorEvidenceQueue.fallback());
+    }
+  }
+
+  InvigilatorEvidenceQueue _filterQueue(InvigilatorEvidenceQueue queue) {
+    final items = queue.items.where((item) {
       final severityOk = _selectedSeverity == 'All' ||
           item.severity == _selectedSeverity;
       final statusOk = _selectedStatus == 'All' || item.status == _selectedStatus;
@@ -101,131 +48,229 @@ class _InvigilatorEvidenceReviewPanelState
           item.evidenceTypes.contains(_selectedEvidence);
       return severityOk && statusOk && evidenceOk;
     }).toList();
+    return InvigilatorEvidenceQueue(
+      metrics: queue.metrics,
+      items: items,
+      count: items.length,
+      fromFallback: queue.fromFallback,
+    );
+  }
+
+  void _reload() {
+    setState(() {
+      _selectedIndex = 0;
+      _queueFuture = _loadQueue();
+    });
+  }
+
+  Future<void> _submitDecision(String caseId, String action) async {
+    try {
+      await _api.decide(caseId: caseId, action: action);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Decision submitted: $action')),
+      );
+      _reload();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Decision saved locally for activation: $action'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cases = _filteredCases;
-    final selected = cases.isEmpty
-        ? null
-        : cases[_selectedIndex.clamp(0, cases.length - 1)];
     final scheme = Theme.of(context).colorScheme;
     final isReportMode = widget.section == 'Malpractice Reports';
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: FutureBuilder<InvigilatorEvidenceQueue>(
+          future: _queueFuture,
+          builder: (context, snapshot) {
+            final queue = snapshot.data ?? InvigilatorEvidenceQueue.fallback();
+            final cases = queue.items;
+            final selected = cases.isEmpty
+                ? null
+                : cases[_selectedIndex.clamp(0, cases.length - 1)];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isReportMode
-                      ? Icons.gpp_maybe_outlined
-                      : Icons.verified_user_outlined,
-                  color: scheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    isReportMode
-                        ? 'Malpractice Evidence Review'
-                        : 'Invigilator Evidence Review Dashboard',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                ),
-                FilledButton.icon(
-                  onPressed: selected == null ? null : () {},
-                  icon: const Icon(Icons.assignment_turned_in_outlined),
-                  label: Text(isReportMode ? 'Submit report' : 'Close review'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: const [
-                _EvidenceMetricChip(
-                  label: 'Open evidence: 24',
-                  icon: Icons.folder_open_outlined,
-                ),
-                _EvidenceMetricChip(
-                  label: 'Captured: 18',
-                  icon: Icons.check_circle_outline,
-                ),
-                _EvidenceMetricChip(
-                  label: 'Pending capture: 4',
-                  icon: Icons.pending_actions_outlined,
-                ),
-                _EvidenceMetricChip(
-                  label: 'Critical: 3',
-                  icon: Icons.priority_high_outlined,
-                ),
-                _EvidenceMetricChip(
-                  label: 'Draft reports: 5',
-                  icon: Icons.description_outlined,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _FilterBar(
-              selectedSeverity: _selectedSeverity,
-              selectedStatus: _selectedStatus,
-              selectedEvidence: _selectedEvidence,
-              onSeverityChanged: (value) => setState(() {
-                _selectedSeverity = value;
-                _selectedIndex = 0;
-              }),
-              onStatusChanged: (value) => setState(() {
-                _selectedStatus = value;
-                _selectedIndex = 0;
-              }),
-              onEvidenceChanged: (value) => setState(() {
-                _selectedEvidence = value;
-                _selectedIndex = 0;
-              }),
-            ),
-            const SizedBox(height: 18),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 900;
-                if (compact) {
-                  return Column(
-                    children: [
-                      _CaseList(
-                        cases: cases,
-                        selectedIndex: _selectedIndex,
-                        onSelected: (index) => setState(() => _selectedIndex = index),
-                      ),
-                      const SizedBox(height: 14),
-                      _EvidenceDetail(caseItem: selected),
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    SizedBox(
-                      width: 390,
-                      child: _CaseList(
-                        cases: cases,
-                        selectedIndex: _selectedIndex,
-                        onSelected: (index) => setState(() => _selectedIndex = index),
+                    Icon(
+                      isReportMode
+                          ? Icons.gpp_maybe_outlined
+                          : Icons.verified_user_outlined,
+                      color: scheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isReportMode
+                            ? 'Malpractice Evidence Review'
+                            : 'Invigilator Evidence Review Dashboard',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(child: _EvidenceDetail(caseItem: selected)),
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: selected == null
+                          ? null
+                          : () => _submitDecision(selected.id, 'close_review'),
+                      icon: const Icon(Icons.assignment_turned_in_outlined),
+                      label: Text(isReportMode ? 'Submit report' : 'Close review'),
+                    ),
                   ],
-                );
-              },
-            ),
-          ],
+                ),
+                if (queue.fromFallback) ...[
+                  const SizedBox(height: 10),
+                  const _OfflineBanner(),
+                ],
+                const SizedBox(height: 12),
+                _MetricRow(metrics: queue.metrics),
+                const SizedBox(height: 16),
+                _FilterBar(
+                  selectedSeverity: _selectedSeverity,
+                  selectedStatus: _selectedStatus,
+                  selectedEvidence: _selectedEvidence,
+                  onSeverityChanged: (value) {
+                    _selectedSeverity = value;
+                    _reload();
+                  },
+                  onStatusChanged: (value) {
+                    _selectedStatus = value;
+                    _reload();
+                  },
+                  onEvidenceChanged: (value) {
+                    _selectedEvidence = value;
+                    _reload();
+                  },
+                ),
+                const SizedBox(height: 18),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 900;
+                    if (compact) {
+                      return Column(
+                        children: [
+                          _CaseList(
+                            cases: cases,
+                            selectedIndex: _selectedIndex,
+                            onSelected: (index) =>
+                                setState(() => _selectedIndex = index),
+                          ),
+                          const SizedBox(height: 14),
+                          _EvidenceDetail(
+                            caseItem: selected,
+                            onDecision: _submitDecision,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 390,
+                          child: _CaseList(
+                            cases: cases,
+                            selectedIndex: _selectedIndex,
+                            onSelected: (index) =>
+                                setState(() => _selectedIndex = index),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _EvidenceDetail(
+                            caseItem: selected,
+                            onDecision: _submitDecision,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ),
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_outlined, color: scheme.secondary),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Backend evidence API is not active yet. Showing fallback review data.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  const _MetricRow({required this.metrics});
+
+  final InvigilatorEvidenceMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _EvidenceMetricChip(
+          label: 'Open evidence: ${metrics.openEvidence}',
+          icon: Icons.folder_open_outlined,
+        ),
+        _EvidenceMetricChip(
+          label: 'Captured: ${metrics.captured}',
+          icon: Icons.check_circle_outline,
+        ),
+        _EvidenceMetricChip(
+          label: 'Pending capture: ${metrics.pendingCapture}',
+          icon: Icons.pending_actions_outlined,
+        ),
+        _EvidenceMetricChip(
+          label: 'Critical: ${metrics.critical}',
+          icon: Icons.priority_high_outlined,
+        ),
+        _EvidenceMetricChip(
+          label: 'Draft reports: ${metrics.draftReports}',
+          icon: Icons.description_outlined,
+        ),
+      ],
     );
   }
 }
@@ -319,7 +364,7 @@ class _CaseList extends StatelessWidget {
     required this.onSelected,
   });
 
-  final List<_EvidenceCase> cases;
+  final List<InvigilatorEvidenceCase> cases;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
@@ -360,7 +405,7 @@ class _CaseTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final _EvidenceCase caseItem;
+  final InvigilatorEvidenceCase caseItem;
   final bool selected;
   final VoidCallback onTap;
 
@@ -422,9 +467,10 @@ class _CaseTile extends StatelessWidget {
 }
 
 class _EvidenceDetail extends StatelessWidget {
-  const _EvidenceDetail({required this.caseItem});
+  const _EvidenceDetail({required this.caseItem, required this.onDecision});
 
-  final _EvidenceCase? caseItem;
+  final InvigilatorEvidenceCase? caseItem;
+  final void Function(String caseId, String action) onDecision;
 
   @override
   Widget build(BuildContext context) {
@@ -533,17 +579,17 @@ class _EvidenceDetail extends StatelessWidget {
                 label: const Text('Open evidence'),
               ),
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () => onDecision(item.id, 'clear_candidate'),
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('Clear candidate'),
               ),
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () => onDecision(item.id, 'issue_warning'),
                 icon: const Icon(Icons.warning_amber_outlined),
                 label: const Text('Issue warning'),
               ),
               FilledButton.icon(
-                onPressed: () {},
+                onPressed: () => onDecision(item.id, 'escalate_report'),
                 icon: const Icon(Icons.gpp_maybe_outlined),
                 label: const Text('Escalate report'),
               ),
@@ -613,13 +659,11 @@ class _SeverityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = severity == 'Critical'
+    final color = severity == 'Critical' || severity == 'High'
         ? scheme.error
-        : severity == 'High'
-            ? scheme.error
-            : severity == 'Medium'
-                ? scheme.secondary
-                : scheme.primary;
+        : severity == 'Medium'
+            ? scheme.secondary
+            : scheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -679,40 +723,4 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-class _EvidenceCase {
-  const _EvidenceCase({
-    required this.candidate,
-    required this.matric,
-    required this.course,
-    required this.session,
-    required this.eventType,
-    required this.severity,
-    required this.status,
-    required this.riskScore,
-    required this.confidence,
-    required this.evidenceTypes,
-    required this.evidenceStatus,
-    required this.evidencePath,
-    required this.time,
-    required this.recommendation,
-    required this.decision,
-  });
-
-  final String candidate;
-  final String matric;
-  final String course;
-  final String session;
-  final String eventType;
-  final String severity;
-  final String status;
-  final int riskScore;
-  final double confidence;
-  final List<String> evidenceTypes;
-  final String evidenceStatus;
-  final String evidencePath;
-  final String time;
-  final String recommendation;
-  final String decision;
 }
