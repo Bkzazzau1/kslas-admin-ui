@@ -16,9 +16,9 @@ class RoleDashboardApi {
       return RoleDashboardData(
         title: 'Exam Officer live queue',
         sections: [
-          RoleDashboardSection(title: 'Questions awaiting action', items: _items(results[0], 'title', 'status')),
-          RoleDashboardSection(title: 'CA submissions', items: _items(results[1], 'summary', 'status')),
-          RoleDashboardSection(title: 'Marked scripts', items: _items(results[2], 'summary', 'status')),
+          RoleDashboardSection(kind: 'exam_assessment', title: 'Questions awaiting action', items: _items(results[0], 'title', 'status', 'assessment')),
+          RoleDashboardSection(kind: 'ca_review', title: 'CA submissions', items: _items(results[1], 'summary', 'status', 'ca_submission')),
+          RoleDashboardSection(kind: 'script_review', title: 'Marked scripts', items: _items(results[2], 'summary', 'status', 'marked_script')),
         ],
       );
     }
@@ -26,7 +26,7 @@ class RoleDashboardApi {
       final data = await _client.get('/api/moderator/assessments');
       return RoleDashboardData(
         title: 'Moderator live queue',
-        sections: [RoleDashboardSection(title: 'Questions to review', items: _items(data, 'title', 'moderation_status'))],
+        sections: [RoleDashboardSection(kind: 'moderator_assessment', title: 'Questions to review', items: _items(data, 'title', 'moderation_status', 'assessment'))],
       );
     }
     if (normalized == 'hod' || normalized == 'dlc_director' || normalized == 'admin') {
@@ -38,9 +38,9 @@ class RoleDashboardApi {
       return RoleDashboardData(
         title: normalized == 'hod' ? 'HoD live command view' : 'DLC Director live command view',
         sections: [
-          RoleDashboardSection(title: 'Staff records', items: _items(results[0], 'first_name', 'primary_role')),
-          RoleDashboardSection(title: 'Lecturer analytics', items: [_analyticsItem(results[1])]),
-          RoleDashboardSection(title: 'Recent alerts', items: _items(results[2], 'title', 'category')),
+          RoleDashboardSection(kind: 'staff', title: 'Staff records', items: _items(results[0], 'first_name', 'primary_role', 'staff')),
+          RoleDashboardSection(kind: 'analytics', title: 'Lecturer analytics', items: [_analyticsItem(results[1])]),
+          RoleDashboardSection(kind: 'notifications', title: 'Recent alerts', items: _items(results[2], 'title', 'category', 'notification')),
         ],
       );
     }
@@ -54,15 +54,43 @@ class RoleDashboardApi {
     return RoleDashboardData(
       title: 'Lecturer live workspace',
       sections: [
-        RoleDashboardSection(title: 'My analytics', items: [_analyticsItem(results[0])]),
-        RoleDashboardSection(title: 'Assignments', items: _items(results[1], 'title', 'status')),
-        RoleDashboardSection(title: 'CA submissions', items: _items(results[2], 'summary', 'status')),
-        RoleDashboardSection(title: 'Marked scripts', items: _items(results[3], 'summary', 'status')),
+        RoleDashboardSection(kind: 'analytics', title: 'My analytics', items: [_analyticsItem(results[0])]),
+        RoleDashboardSection(kind: 'assignment', title: 'Assignments', items: _items(results[1], 'title', 'status', 'assignment')),
+        RoleDashboardSection(kind: 'ca_submission', title: 'CA submissions', items: _items(results[2], 'summary', 'status', 'ca_submission')),
+        RoleDashboardSection(kind: 'marked_script', title: 'Marked scripts', items: _items(results[3], 'summary', 'status', 'marked_script')),
       ],
     );
   }
 
-  List<RoleDashboardItem> _items(dynamic data, String titleKey, String statusKey) {
+  Future<void> examOfficerAssessmentAction(String id, String action, String feedback) async {
+    await _client.post('/api/exam-officer/assessments/$id/$action', body: {'feedback': feedback});
+  }
+
+  Future<void> moderatorAssessmentAction(String id, String action, String feedback) async {
+    await _client.post('/api/moderator/assessments/$id/$action', body: {'feedback': feedback});
+  }
+
+  Future<void> reviewCA(String id, String status, String feedback) async {
+    await _client.patch('/api/exam-officer/ca-submissions/$id/review', body: {'status': status, 'feedback': feedback});
+  }
+
+  Future<void> reviewMarkedScript(String id, String status, String feedback) async {
+    await _client.patch('/api/exam-officer/marked-exam-scripts/$id/review', body: {'status': status, 'feedback': feedback});
+  }
+
+  Future<void> createAssignment(Map<String, dynamic> payload) async {
+    await _client.post('/api/lecturer/assignments', body: payload);
+  }
+
+  Future<void> submitCA(Map<String, dynamic> payload) async {
+    await _client.post('/api/lecturer/ca-submissions', body: payload);
+  }
+
+  Future<void> submitMarkedScripts(Map<String, dynamic> payload) async {
+    await _client.post('/api/lecturer/marked-exam-scripts', body: payload);
+  }
+
+  List<RoleDashboardItem> _items(dynamic data, String titleKey, String statusKey, String resourceType) {
     if (data is! List) return const [];
     return data.whereType<Map>().map((raw) {
       final json = raw.map((key, value) => MapEntry(key.toString(), value));
@@ -75,6 +103,8 @@ class RoleDashboardApi {
           .map((value) => value.toString())
           .firstOrNull;
       return RoleDashboardItem(
+        id: json['id']?.toString() ?? '',
+        resourceType: resourceType,
         title: json[titleKey]?.toString().trim().isNotEmpty == true ? json[titleKey].toString() : fallbackTitle ?? 'Record',
         subtitle: subtitle,
         status: json[statusKey]?.toString() ?? 'open',
@@ -90,13 +120,15 @@ class RoleDashboardApi {
         final pending = summary['pending_marking']?.toString() ?? '0';
         final submissions = summary['submissions_received']?.toString() ?? '0';
         return RoleDashboardItem(
+          id: '',
+          resourceType: 'analytics',
           title: '$courses courses • $submissions submissions',
           subtitle: 'Pending marking: $pending',
           status: 'live',
         );
       }
     }
-    return const RoleDashboardItem(title: 'Analytics unavailable', subtitle: 'No live summary returned yet', status: 'pending');
+    return const RoleDashboardItem(id: '', resourceType: 'analytics', title: 'Analytics unavailable', subtitle: 'No live summary returned yet', status: 'pending');
   }
 
   void close() => _client.close();
@@ -110,15 +142,18 @@ class RoleDashboardData {
 }
 
 class RoleDashboardSection {
-  const RoleDashboardSection({required this.title, required this.items});
+  const RoleDashboardSection({required this.kind, required this.title, required this.items});
 
+  final String kind;
   final String title;
   final List<RoleDashboardItem> items;
 }
 
 class RoleDashboardItem {
-  const RoleDashboardItem({required this.title, required this.subtitle, required this.status});
+  const RoleDashboardItem({required this.id, required this.resourceType, required this.title, required this.subtitle, required this.status});
 
+  final String id;
+  final String resourceType;
   final String title;
   final String subtitle;
   final String status;
