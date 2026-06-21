@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../auth/auth_session.dart';
 import '../config/api_config.dart';
 
 class ApiException implements Exception {
@@ -17,17 +18,18 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({http.Client? client, String? token})
       : _client = client ?? http.Client(),
-        _token = token ?? _envToken;
+        _token = token;
 
   final http.Client _client;
-  final String _token;
+  final String? _token;
 
-  static const String _envToken = String.fromEnvironment('KSLAS_STAFF_TOKEN');
+  String get _resolvedToken => _token ?? AuthSession.instance.token;
 
   Map<String, String> get _headers {
     final headers = <String, String>{'Content-Type': 'application/json'};
-    if (_token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $_token';
+    final token = _resolvedToken;
+    if (token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
     }
     return headers;
   }
