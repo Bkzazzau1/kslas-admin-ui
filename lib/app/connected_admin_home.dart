@@ -5,6 +5,7 @@ import '../features/admin_shell/admin_operations_shell.dart';
 import '../features/lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../features/live_dashboard/widgets/live_dashboard_panel.dart';
 import '../features/role_dashboard/widgets/role_dashboard_panel.dart';
+import '../features/role_dashboard/widgets/workflow_forms_panel.dart';
 import '../features/workflow/widgets/workflow_live_panel.dart';
 
 class ConnectedAdminHome extends StatelessWidget {
@@ -32,6 +33,13 @@ class ConnectedAdminHome extends StatelessWidget {
                 onPressed: () => _openRoleDashboard(context),
                 icon: const Icon(Icons.admin_panel_settings_outlined),
                 label: const Text('My role'),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton.extended(
+                heroTag: 'backend-smart-forms',
+                onPressed: () => _openSmartForms(context),
+                icon: const Icon(Icons.dynamic_form_outlined),
+                label: const Text('Smart forms'),
               ),
               const SizedBox(height: 10),
               FloatingActionButton.extended(
@@ -72,6 +80,23 @@ class ConnectedAdminHome extends StatelessWidget {
           child: SingleChildScrollView(
             padding: EdgeInsets.all(16),
             child: RoleDashboardPanel(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openSmartForms(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) {
+        return const FractionallySizedBox(
+          heightFactor: 0.9,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: WorkflowFormsPanel(),
           ),
         );
       },
