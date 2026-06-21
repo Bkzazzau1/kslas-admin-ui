@@ -4,6 +4,7 @@ import '../core/auth/auth_session.dart';
 import '../features/admin_shell/admin_operations_shell.dart';
 import '../features/lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../features/live_dashboard/widgets/live_dashboard_panel.dart';
+import '../features/role_dashboard/widgets/role_dashboard_panel.dart';
 import '../features/workflow/widgets/workflow_live_panel.dart';
 
 class ConnectedAdminHome extends StatelessWidget {
@@ -26,6 +27,13 @@ class ConnectedAdminHome extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              FloatingActionButton.extended(
+                heroTag: 'backend-role-dashboard',
+                onPressed: () => _openRoleDashboard(context),
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('My role'),
+              ),
+              const SizedBox(height: 10),
               FloatingActionButton.extended(
                 heroTag: 'backend-live-dashboard',
                 onPressed: () => _openLiveDashboard(context),
@@ -50,6 +58,23 @@ class ConnectedAdminHome extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _openRoleDashboard(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) {
+        return const FractionallySizedBox(
+          heightFactor: 0.9,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: RoleDashboardPanel(),
+          ),
+        );
+      },
     );
   }
 
