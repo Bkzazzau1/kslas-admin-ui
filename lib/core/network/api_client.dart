@@ -34,6 +34,15 @@ class ApiClient {
     return headers;
   }
 
+  Map<String, String> get _authHeaders {
+    final headers = <String, String>{};
+    final token = _resolvedToken;
+    if (token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
   Future<dynamic> get(String path, {Map<String, String>? query}) async {
     final response = await _client.get(ApiConfig.uri(path, query), headers: _headers);
     return _decode(response);
@@ -54,6 +63,22 @@ class ApiClient {
       headers: _headers,
       body: body == null ? null : jsonEncode(body),
     );
+    return _decode(response);
+  }
+
+  Future<dynamic> uploadBytes({
+    required String path,
+    required List<int> bytes,
+    required String fileName,
+    String fieldName = 'file',
+    String category = 'general',
+  }) async {
+    final request = http.MultipartRequest('POST', ApiConfig.uri(path));
+    request.headers.addAll(_authHeaders);
+    request.fields['category'] = category;
+    request.files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName));
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
     return _decode(response);
   }
 
