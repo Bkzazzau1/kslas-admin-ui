@@ -6,6 +6,9 @@ class ApiConfig {
     defaultValue: '',
   );
 
+  static const String productionAdminOrigin = 'https://admin.fazam.tech';
+  static const String productionApiOrigin = 'https://api.fazam.tech';
+
   static String get baseUrl {
     final defined = _definedBaseUrl.trim();
     if (defined.isNotEmpty && !_isPlaceholder(defined)) {
@@ -13,6 +16,9 @@ class ApiConfig {
     }
 
     final currentOrigin = Uri.base.origin;
+    if (currentOrigin == productionAdminOrigin) {
+      return productionApiOrigin;
+    }
     if (currentOrigin.startsWith('http')) {
       return _stripTrailingSlash(currentOrigin);
     }
