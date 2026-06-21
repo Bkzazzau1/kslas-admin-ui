@@ -4,6 +4,7 @@ import '../core/auth/auth_session.dart';
 import '../features/admin_shell/admin_operations_shell.dart';
 import '../features/lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../features/live_dashboard/widgets/live_dashboard_panel.dart';
+import '../features/live_dashboard/widgets/notification_bell.dart';
 import '../features/role_dashboard/widgets/role_dashboard_panel.dart';
 import '../features/role_dashboard/widgets/workflow_forms_panel.dart';
 import '../features/workflow/widgets/workflow_live_panel.dart';
@@ -171,6 +172,8 @@ class _SessionCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const NotificationBell(),
+            const SizedBox(width: 8),
             CircleAvatar(
               radius: 18,
               backgroundColor: scheme.primaryContainer,
