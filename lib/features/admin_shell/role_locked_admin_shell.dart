@@ -9,6 +9,7 @@ import '../role_dashboard/widgets/workflow_forms_panel.dart';
 import '../staff_management/widgets/staff_management_panel.dart';
 import '../workflow/widgets/workflow_live_panel.dart';
 import 'admin_operations_shell.dart';
+import 'command_center_page.dart';
 
 class RoleLockedAdminShell extends StatefulWidget {
   const RoleLockedAdminShell({super.key});
@@ -30,7 +31,7 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
     return 'lecturer';
   }
 
-  List<_LockedPage> get _pages => _pagesForRole(_role);
+  List<_LockedPage> get _pages => _pagesForRole(_role, _openPageByLabel);
 
   @override
   Widget build(BuildContext context) {
@@ -75,46 +76,54 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
   void _selectPage(int value) {
     setState(() => _selectedIndex = value);
   }
+
+  void _openPageByLabel(String label) {
+    final pages = _pages;
+    final index = pages.indexWhere((page) => page.label == label);
+    if (index >= 0) _selectPage(index);
+  }
 }
 
-List<_LockedPage> _pagesForRole(String role) {
+List<_LockedPage> _pagesForRole(String role, ValueChanged<String> onOpenPage) {
   switch (role) {
     case 'admin':
     case 'super_admin':
     case 'superadmin':
     case 'dlc_director':
-      return _adminPages;
+      return _adminPages(role, onOpenPage);
     case 'hod':
-      return _hodPages;
+      return _hodPages(role, onOpenPage);
     case 'exam_officer':
-      return _examOfficerPages;
+      return _examOfficerPages(role, onOpenPage);
     case 'moderator':
-      return _moderatorPages;
+      return _moderatorPages(role, onOpenPage);
     case 'lecturer':
-      return _lecturerPages;
+      return _lecturerPages(role, onOpenPage);
     case 'academic_records':
     case 'records_department':
-      return _recordsPages;
+      return _recordsPages(role, onOpenPage);
     case 'level_adviser':
-      return _levelAdviserPages;
+      return _levelAdviserPages(role, onOpenPage);
     case 'invigilator':
-      return _invigilatorPages;
+      return _invigilatorPages(role, onOpenPage);
     default:
-      return _lecturerPages;
+      return _lecturerPages(role, onOpenPage);
   }
 }
 
-final _adminPages = [
-  _LockedPage('Full console', Icons.dashboard_customize_outlined, (_) => const AdminOperationsShell()),
+List<_LockedPage> _adminPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('Staff management', Icons.badge_outlined, (_) => const _PanelHost(child: StaffManagementPanel())),
   _LockedPage('My role', Icons.admin_panel_settings_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Smart forms', Icons.dynamic_form_outlined, (_) => const _PanelHost(child: WorkflowFormsPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
   _LockedPage('Live workflow', Icons.account_tree_outlined, (_) => const _PanelHost(child: WorkflowLivePanel())),
   _LockedPage('Live questions', Icons.cloud_done_outlined, (_) => const _PanelHost(child: LecturerAssessmentLivePanel())),
+  _LockedPage('Full console', Icons.dashboard_customize_outlined, (_) => const AdminOperationsShell()),
 ];
 
-final _hodPages = [
+List<_LockedPage> _hodPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('Staff management', Icons.badge_outlined, (_) => const _PanelHost(child: StaffManagementPanel())),
   _LockedPage('My role', Icons.account_tree_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
@@ -122,7 +131,8 @@ final _hodPages = [
   _LockedPage('Live questions', Icons.cloud_done_outlined, (_) => const _PanelHost(child: LecturerAssessmentLivePanel())),
 ];
 
-final _lecturerPages = [
+List<_LockedPage> _lecturerPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.school_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Smart forms', Icons.dynamic_form_outlined, (_) => const _PanelHost(child: WorkflowFormsPanel())),
   _LockedPage('Live workflow', Icons.account_tree_outlined, (_) => const _PanelHost(child: WorkflowLivePanel())),
@@ -130,28 +140,33 @@ final _lecturerPages = [
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
 
-final _examOfficerPages = [
+List<_LockedPage> _examOfficerPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.assignment_turned_in_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live workflow', Icons.account_tree_outlined, (_) => const _PanelHost(child: WorkflowLivePanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
 
-final _moderatorPages = [
+List<_LockedPage> _moderatorPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.rule_folder_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
 
-final _recordsPages = [
+List<_LockedPage> _recordsPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.badge_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
 
-final _levelAdviserPages = [
+List<_LockedPage> _levelAdviserPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.person_search_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
 
-final _invigilatorPages = [
+List<_LockedPage> _invigilatorPages(String role, ValueChanged<String> onOpenPage) => [
+  _LockedPage('Command center', Icons.space_dashboard_outlined, (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage)),
   _LockedPage('My role', Icons.verified_user_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
 ];
