@@ -13,6 +13,7 @@ class StaffManagementPanel extends StatefulWidget {
 class _StaffManagementPanelState extends State<StaffManagementPanel> {
   late final StaffManagementApi _api;
   late Future<List<StaffItem>> _future;
+  late Future<StaffReferenceData> _referencesFuture;
   bool _busy = false;
 
   @override
@@ -20,6 +21,7 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     super.initState();
     _api = StaffManagementApi();
     _future = _api.fetchStaff();
+    _referencesFuture = _api.fetchReferences();
   }
 
   @override
@@ -28,7 +30,20 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     super.dispose();
   }
 
-  void _reload() => setState(() => _future = _api.fetchStaff());
+  void _reload() {
+    setState(() {
+      _future = _api.fetchStaff();
+      _referencesFuture = _api.fetchReferences();
+    });
+  }
+
+  Future<StaffReferenceData> _safeReferences() async {
+    try {
+      return await _referencesFuture;
+    } catch (_) {
+      return const StaffReferenceData(departments: [], courses: []);
+    }
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     setState(() => _busy = true);
@@ -49,13 +64,17 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
   }
 
   Future<void> _openCreateStaff() async {
-    final payload = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => const _CreateStaffDialog());
+    final refs = await _safeReferences();
+    if (!mounted) return;
+    final payload = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => _CreateStaffDialog(references: refs));
     if (payload == null) return;
     await _run(() => _api.createStaff(payload));
   }
 
   Future<void> _openAssignRole(StaffItem staff) async {
-    final payload = await showDialog<Map<String, String>>(context: context, builder: (_) => _AssignRoleDialog(staff: staff));
+    final refs = await _safeReferences();
+    if (!mounted) return;
+    final payload = await showDialog<Map<String, String>>(context: context, builder: (_) => _AssignRoleDialog(staff: staff, references: refs));
     if (payload == null) return;
     await _run(() => _api.assignRole(staffId: staff.id, role: payload['role'] ?? 'lecturer', departmentId: payload['department_id'], courseId: payload['course_id']));
   }
@@ -93,7 +112,16 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Create staff accounts and assign additional roles. Passwords are sent to the backend and stored as hashes.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            FutureBuilder<StaffReferenceData>(
+              future: _referencesFuture,
+              builder: (context, snapshot) {
+                final refs = snapshot.data;
+                final text = refs == null
+                    ? 'Loading department and course options...'
+                    : '${refs.departments.length} departments and ${refs.courses.length} courses loaded for role assignment.';
+                return Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant));
+              },
+            ),
             const SizedBox(height: 18),
             FutureBuilder<List<StaffItem>>(
               future: _future,
@@ -105,9 +133,7 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
                   return _StaffError(message: snapshot.error.toString(), onRetry: _reload);
                 }
                 final staff = snapshot.data ?? const [];
-                if (staff.isEmpty) {
-                  return const _EmptyStaffState();
-                }
+                if (staff.isEmpty) return const _EmptyStaffState();
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     if (constraints.maxWidth < 720) {
@@ -176,7 +202,9 @@ class _StaffCard extends StatelessWidget {
 }
 
 class _CreateStaffDialog extends StatefulWidget {
-  const _CreateStaffDialog();
+  const _CreateStaffDialog({required this.references});
+
+  final StaffReferenceData references;
 
   @override
   State<_CreateStaffDialog> createState() => _CreateStaffDialogState();
@@ -190,8 +218,9 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
-  final _departmentId = TextEditingController();
+  final _fallbackDepartmentId = TextEditingController();
   String _role = 'lecturer';
+  String? _departmentId;
 
   @override
   void dispose() {
@@ -202,7 +231,7 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
     _email.dispose();
     _phone.dispose();
     _password.dispose();
-    _departmentId.dispose();
+    _fallbackDepartmentId.dispose();
     super.dispose();
   }
 
@@ -226,7 +255,13 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
               const SizedBox(height: 10),
               TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone')),
               const SizedBox(height: 10),
-              TextField(controller: _departmentId, decoration: const InputDecoration(labelText: 'Department ID optional')),
+              _ReferencePicker(
+                label: 'Department',
+                options: widget.references.departments,
+                value: _departmentId,
+                fallbackController: _fallbackDepartmentId,
+                onChanged: (value) => setState(() => _departmentId = value),
+              ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: _role,
@@ -259,15 +294,17 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
       'password': _password.text,
       'is_active': true,
     };
-    if (_departmentId.text.trim().isNotEmpty) payload['department_id'] = _departmentId.text.trim();
+    final departmentId = _departmentId ?? _fallbackDepartmentId.text.trim();
+    if (departmentId.isNotEmpty) payload['department_id'] = departmentId;
     return payload;
   }
 }
 
 class _AssignRoleDialog extends StatefulWidget {
-  const _AssignRoleDialog({required this.staff});
+  const _AssignRoleDialog({required this.staff, required this.references});
 
   final StaffItem staff;
+  final StaffReferenceData references;
 
   @override
   State<_AssignRoleDialog> createState() => _AssignRoleDialogState();
@@ -275,13 +312,15 @@ class _AssignRoleDialog extends StatefulWidget {
 
 class _AssignRoleDialogState extends State<_AssignRoleDialog> {
   String _role = 'lecturer';
-  final _departmentId = TextEditingController();
-  final _courseId = TextEditingController();
+  String? _departmentId;
+  String? _courseId;
+  final _fallbackDepartmentId = TextEditingController();
+  final _fallbackCourseId = TextEditingController();
 
   @override
   void dispose() {
-    _departmentId.dispose();
-    _courseId.dispose();
+    _fallbackDepartmentId.dispose();
+    _fallbackCourseId.dispose();
     super.dispose();
   }
 
@@ -290,27 +329,64 @@ class _AssignRoleDialogState extends State<_AssignRoleDialog> {
     return AlertDialog(
       title: Text('Assign role to ${widget.staff.name}'),
       content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              value: _role,
-              decoration: const InputDecoration(labelText: 'Role'),
-              items: [for (final role in staffRoleOptions) DropdownMenuItem(value: role, child: Text(role))],
-              onChanged: (value) => setState(() => _role = value ?? 'lecturer'),
-            ),
-            const SizedBox(height: 10),
-            TextField(controller: _departmentId, decoration: const InputDecoration(labelText: 'Department ID optional')),
-            const SizedBox(height: 10),
-            TextField(controller: _courseId, decoration: const InputDecoration(labelText: 'Course ID optional')),
-          ],
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _role,
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: [for (final role in staffRoleOptions) DropdownMenuItem(value: role, child: Text(role))],
+                onChanged: (value) => setState(() => _role = value ?? 'lecturer'),
+              ),
+              const SizedBox(height: 10),
+              _ReferencePicker(
+                label: 'Department scope',
+                options: widget.references.departments,
+                value: _departmentId,
+                fallbackController: _fallbackDepartmentId,
+                onChanged: (value) => setState(() => _departmentId = value),
+              ),
+              const SizedBox(height: 10),
+              _ReferencePicker(
+                label: 'Course scope',
+                options: widget.references.courses,
+                value: _courseId,
+                fallbackController: _fallbackCourseId,
+                onChanged: (value) => setState(() => _courseId = value),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(context).pop({'role': _role, 'department_id': _departmentId.text.trim(), 'course_id': _courseId.text.trim()}), child: const Text('Assign')),
+        FilledButton(onPressed: () => Navigator.of(context).pop({'role': _role, 'department_id': _departmentId ?? _fallbackDepartmentId.text.trim(), 'course_id': _courseId ?? _fallbackCourseId.text.trim()}), child: const Text('Assign')),
       ],
+    );
+  }
+}
+
+class _ReferencePicker extends StatelessWidget {
+  const _ReferencePicker({required this.label, required this.options, required this.value, required this.fallbackController, required this.onChanged});
+
+  final String label;
+  final List<ReferenceOption> options;
+  final String? value;
+  final TextEditingController fallbackController;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (options.isEmpty) {
+      return TextField(controller: fallbackController, decoration: InputDecoration(labelText: '$label ID'));
+    }
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label),
+      items: [for (final option in options) DropdownMenuItem(value: option.id, child: Text(option.label, overflow: TextOverflow.ellipsis))],
+      onChanged: onChanged,
     );
   }
 }
