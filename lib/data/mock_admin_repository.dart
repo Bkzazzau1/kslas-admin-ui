@@ -1263,6 +1263,35 @@ class MockAdminRepository {
       ];
     }
 
+    if (role == AdminRole.invigilator) {
+      return const [
+        AdminTask(
+          title: 'Review phone-like object alert with evidence',
+          ownerRole: AdminRole.invigilator,
+          due: 'Now',
+          status: WorkStatus.urgent,
+          description:
+              'AI flagged object detection for manual review; open camera frame and decide clear, warn, escalate, or attach to report.',
+        ),
+        AdminTask(
+          title: 'Verify late check-in identity and device ID',
+          ownerRole: AdminRole.invigilator,
+          due: 'Today, 9:15 AM',
+          status: WorkStatus.warning,
+          description:
+              'Confirm candidate face, matric number, whitelisted workstation, and check-in reason before approving exam start.',
+        ),
+        AdminTask(
+          title: 'Resolve pending evidence sync queue',
+          ownerRole: AdminRole.invigilator,
+          due: 'Today, 10:00 AM',
+          status: WorkStatus.normal,
+          description:
+              'Check evidence uploaded, local pending evidence, and ledger pending status for assigned exam group.',
+        ),
+      ];
+    }
+
     if (pageLabel == 'Notices') {
       return const [
         AdminTask(
@@ -1364,6 +1393,99 @@ class MockAdminRepository {
   }
 
   List<String> workflowsFor(String pageLabel, {AdminRole? role}) {
+    if (role == AdminRole.invigilator) {
+      switch (pageLabel) {
+        case 'Live Student Grid':
+          return const [
+            'Active students only',
+            'Camera, mic, screen, network, and device status',
+            'Risk colour status',
+            'Integrity score',
+            'Last detected event',
+          ];
+        case 'AI Alert Queue':
+          return const [
+            'Critical alerts first',
+            'Manual-review alerts',
+            'Evidence-captured alerts',
+            'Face, object, audio, and screen activity detection',
+            'Unreviewed alert count',
+          ];
+        case 'Evidence Review':
+          return const [
+            'Camera frame evidence',
+            'Screenshot evidence',
+            'Audio clip evidence',
+            'AI confidence and detector source',
+            'Ledger reference',
+          ];
+        case 'Manual Decisions':
+          return const [
+            'Clear false alarm',
+            'Warn student',
+            'Request scan or recheck',
+            'Escalate to chief invigilator',
+            'Pause, resume, or terminate session',
+          ];
+        case 'Student Session Detail':
+          return const [
+            'Live camera preview',
+            'Face, object, audio, and screen status',
+            'Risk timeline',
+            'Device and network information',
+            'Exam progress',
+          ];
+        case 'Room Scan Requests':
+          return const [
+            'Request desk scan',
+            'Request left and right scan',
+            'Request behind-monitor scan',
+            'Request ID and face recheck',
+            'Request microphone check',
+          ];
+        case 'Attendance & Check-in':
+          return const [
+            'Checked-in students',
+            'Absent students',
+            'Approve late check-in',
+            'Verify identity and device ID',
+            'Mark present or absent',
+          ];
+        case 'Risk Timeline':
+          return const [
+            'Face verified',
+            'Exam started',
+            'Detector events',
+            'Evidence captured',
+            'Invigilator decisions',
+          ];
+        case 'Malpractice Drafts':
+          return const [
+            'Selected evidence list',
+            'AI confidence scores',
+            'Invigilator decision',
+            'Final recommendation',
+            'Submit or export report',
+          ];
+        case 'Evidence Sync Status':
+          return const [
+            'Evidence uploaded',
+            'Evidence pending locally',
+            'Ledger pending',
+            'Sync failed',
+            'Network-aware status',
+          ];
+        case 'Audit Trail':
+          return const [
+            'Reviewer identity',
+            'Decision timestamp',
+            'Evidence used',
+            'Warning and escalation record',
+            'Report creation log',
+          ];
+      }
+    }
+
     if (role == AdminRole.lecturer) {
       switch (pageLabel) {
         case 'My Courses':

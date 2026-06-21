@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class LecturerAssignmentsMarkingPanel extends StatefulWidget {
-  const LecturerAssignmentsMarkingPanel({super.key});
+  const LecturerAssignmentsMarkingPanel({
+    super.key,
+    this.section = 'Marking & Grading',
+  });
+
+  final String section;
 
   @override
   State<LecturerAssignmentsMarkingPanel> createState() =>
@@ -158,6 +163,18 @@ class _LecturerAssignmentsMarkingPanelState
         )
         .toList();
 
+    if (widget.section == 'Results Submission') {
+      return _LecturerResultsSubmissionPanel(
+        selectedCourse: _selectedCourse,
+        selectedStatus: _selectedStatus,
+        examSamples: filteredExamSamples,
+        onCourseChanged: (value) =>
+            setState(() => _selectedCourse = value ?? 'All'),
+        onStatusChanged: (value) =>
+            setState(() => _selectedStatus = value ?? 'All'),
+      );
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -170,7 +187,7 @@ class _LecturerAssignmentsMarkingPanelState
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Lecturer Assignments & Marking',
+                    widget.section,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -347,6 +364,257 @@ class _LecturerAssignmentsMarkingPanelState
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LecturerResultsSubmissionPanel extends StatelessWidget {
+  const _LecturerResultsSubmissionPanel({
+    required this.selectedCourse,
+    required this.selectedStatus,
+    required this.examSamples,
+    required this.onCourseChanged,
+    required this.onStatusChanged,
+  });
+
+  final String selectedCourse;
+  final String selectedStatus;
+  final List<_ExamMarkingSample> examSamples;
+  final ValueChanged<String?> onCourseChanged;
+  final ValueChanged<String?> onStatusChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final submitted = examSamples.where((item) => item.status == 'Marked');
+    final pending = examSamples.where((item) => item.status != 'Marked');
+    final totalExamMarks = examSamples.fold<int>(
+      0,
+      (total, item) =>
+          total + item.objectiveScore + item.theoryScore + item.practicalScore,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.publish_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Results Submission',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: submitted.isEmpty ? null : () {},
+                  icon: const Icon(Icons.upload_outlined),
+                  label: const Text('Submit selected batch'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _AssignmentChip(
+                  label: 'Ready batches: ${submitted.length}',
+                  icon: Icons.verified_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Pending scripts: ${pending.length}',
+                  icon: Icons.pending_actions_outlined,
+                ),
+                _AssignmentChip(
+                  label: 'Exam total: $totalExamMarks',
+                  icon: Icons.calculate_outlined,
+                ),
+                const _AssignmentChip(
+                  label: 'Destination: Exam Officer',
+                  icon: Icons.admin_panel_settings_outlined,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: 220,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: selectedCourse,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All courses'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CSC 305',
+                        child: Text('CSC 305'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'CSC 309',
+                        child: Text('CSC 309'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'SEN 301',
+                        child: Text('SEN 301'),
+                      ),
+                    ],
+                    onChanged: onCourseChanged,
+                    decoration: const InputDecoration(labelText: 'Course'),
+                  ),
+                ),
+                SizedBox(
+                  width: 240,
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: selectedStatus,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All statuses'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Pending Marking',
+                        child: Text('Pending Marking'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Integrity Review',
+                        child: Text('Integrity Review'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Ready to Release',
+                        child: Text('Ready to Release'),
+                      ),
+                      DropdownMenuItem(value: 'Marked', child: Text('Marked')),
+                    ],
+                    onChanged: onStatusChanged,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Exam Officer result packages',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final item in examSamples)
+              _ResultPackageTile(
+                item: item,
+                canSubmit: item.status == 'Marked',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultPackageTile extends StatelessWidget {
+  const _ResultPackageTile({required this.item, required this.canSubmit});
+
+  final _ExamMarkingSample item;
+  final bool canSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final examTotal =
+        item.objectiveScore + item.theoryScore + item.practicalScore;
+    const assignmentTotal = 18;
+    const caTotal = 12;
+    final statusColor = canSubmit ? scheme.primary : scheme.secondary;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.courseCode} • ${item.examTitle}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.student} • ${item.candidateNo}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(text: item.status, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MiniPill(label: 'Assignments $assignmentTotal/20'),
+              _MiniPill(label: 'CA $caTotal/20'),
+              _MiniPill(label: 'Exam $examTotal/${item.maxScore}'),
+              _MiniPill(label: 'Script attached'),
+              _MiniPill(label: item.markingGuide),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('Review package'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save batch'),
+              ),
+              FilledButton.icon(
+                onPressed: canSubmit ? () {} : null,
+                icon: const Icon(Icons.publish_outlined),
+                label: const Text('Submit to Exam Officer'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

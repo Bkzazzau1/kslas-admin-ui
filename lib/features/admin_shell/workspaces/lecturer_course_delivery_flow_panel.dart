@@ -20,6 +20,48 @@ class _LecturerCourseDeliveryFlowPanelState
   bool _allowLateSubmission = true;
   bool _autoMarkObjective = true;
   bool _requiresModerator = true;
+  bool _lecturerMicOn = true;
+  bool _lecturerCameraOn = true;
+  bool _attendanceRecording = true;
+  final List<_LiveStudentControl> _liveStudents = [
+    _LiveStudentControl(
+      name: 'Zainab Ibrahim',
+      matricNo: '2023/C/CSC/0188',
+      present: true,
+      micOn: false,
+      cameraOn: true,
+      sharePending: true,
+      attendanceMinutes: 42,
+    ),
+    _LiveStudentControl(
+      name: 'David Emmanuel',
+      matricNo: '2023/C/SENG/0400',
+      present: true,
+      micOn: true,
+      cameraOn: false,
+      sharePending: false,
+      shareApproved: true,
+      attendanceMinutes: 39,
+    ),
+    _LiveStudentControl(
+      name: 'Maryam Bello',
+      matricNo: '2022/C/CSC/0112',
+      present: true,
+      micOn: false,
+      cameraOn: false,
+      sharePending: false,
+      attendanceMinutes: 36,
+    ),
+    _LiveStudentControl(
+      name: 'Ibrahim Yahaya',
+      matricNo: '2023/C/SENG/0400',
+      present: false,
+      micOn: false,
+      cameraOn: false,
+      sharePending: false,
+      attendanceMinutes: 0,
+    ),
+  ];
   final List<_QuestionDraftItem> _questionDrafts = [
     _QuestionDraftItem(
       number: 1,
@@ -109,6 +151,9 @@ class _LecturerCourseDeliveryFlowPanelState
                 widget.section == 'Quizzes & Tests')
               _assignmentFlow(),
             if (widget.section == 'Exam Questions') _examQuestionFlow(),
+            if (widget.section == 'Student Engagement')
+              _studentEngagementFlow(),
+            if (widget.section == 'Messages / Q&A') _messagesQaFlow(),
             if (widget.section == 'Profile') _settingsFlow(),
           ],
         ),
@@ -309,18 +354,18 @@ class _LecturerCourseDeliveryFlowPanelState
 
   Widget _liveSessionFlow() {
     return _FlowSection(
-      title: 'Live class session',
+      title: 'Create lecturer live session',
       icon: Icons.live_tv_outlined,
       actions: [
         OutlinedButton.icon(
           onPressed: () {},
           icon: const Icon(Icons.calendar_month_outlined),
-          label: const Text('Schedule'),
+          label: const Text('Save schedule'),
         ),
         FilledButton.icon(
           onPressed: () {},
-          icon: const Icon(Icons.play_circle_outline),
-          label: const Text('Start class'),
+          icon: const Icon(Icons.publish_outlined),
+          label: const Text('Publish to students'),
         ),
       ],
       children: [
@@ -334,11 +379,27 @@ class _LecturerCourseDeliveryFlowPanelState
             ),
             _FieldShell(
               width: 220,
-              child: TextField(decoration: InputDecoration(labelText: 'Date')),
+              child: TextField(
+                decoration: InputDecoration(labelText: 'Session date'),
+              ),
             ),
             _FieldShell(
               width: 180,
-              child: TextField(decoration: InputDecoration(labelText: 'Time')),
+              child: TextField(
+                decoration: InputDecoration(labelText: 'Start time'),
+              ),
+            ),
+            _FieldShell(
+              width: 180,
+              child: TextField(
+                decoration: InputDecoration(labelText: 'End time'),
+              ),
+            ),
+            _FieldShell(
+              width: 200,
+              child: TextField(
+                decoration: InputDecoration(labelText: 'Attendance opens'),
+              ),
             ),
             _FieldShell(
               width: 260,
@@ -349,17 +410,72 @@ class _LecturerCourseDeliveryFlowPanelState
           ],
         ),
         const SizedBox(height: 12),
-        SwitchListTile(
-          value: _requiresModerator,
-          onChanged: (value) => setState(() => _requiresModerator = value),
-          title: const Text('Share recording after class'),
-          contentPadding: EdgeInsets.zero,
+        Wrap(
+          spacing: 14,
+          runSpacing: 8,
+          children: [
+            SizedBox(
+              width: 320,
+              child: SwitchListTile(
+                value: _requiresModerator,
+                onChanged: (value) =>
+                    setState(() => _requiresModerator = value),
+                title: const Text('Share recording after class'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            SizedBox(
+              width: 320,
+              child: SwitchListTile(
+                value: _autoMarkObjective,
+                onChanged: (value) =>
+                    setState(() => _autoMarkObjective = value),
+                title: const Text('Enable student attendance tracking'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 8),
+        const TextField(
+          minLines: 2,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: 'Class agenda / student preparation note',
+            prefixIcon: Icon(Icons.notes_outlined),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _LecturerLiveRoomPanel(
+          course: _course,
+          lecturerMicOn: _lecturerMicOn,
+          lecturerCameraOn: _lecturerCameraOn,
+          attendanceRecording: _attendanceRecording,
+          students: _liveStudents,
+          onToggleLecturerMic: () =>
+              setState(() => _lecturerMicOn = !_lecturerMicOn),
+          onToggleLecturerCamera: () =>
+              setState(() => _lecturerCameraOn = !_lecturerCameraOn),
+          onToggleAttendance: () =>
+              setState(() => _attendanceRecording = !_attendanceRecording),
+          onToggleStudentMic: (student) =>
+              setState(() => student.micOn = !student.micOn),
+          onToggleStudentCamera: (student) =>
+              setState(() => student.cameraOn = !student.cameraOn),
+          onApproveShare: (student) => setState(() {
+            student.sharePending = false;
+            student.shareApproved = true;
+          }),
+          onDenyShare: (student) =>
+              setState(() => student.sharePending = false),
+          onRemoveStudent: (student) => setState(() => student.present = false),
+        ),
+        const SizedBox(height: 14),
         const _ExistingItemList(
-          title: 'Upcoming live classes',
+          title: 'Lecturer-created live classes visible to students',
           items: [
-            'Recursion clinic - Friday 10:00 AM - Attendance enabled',
-            'Database normalisation Q&A - Monday 2:00 PM - Recording allowed',
+            'CSC 201 - Recursion clinic - Friday 10:00 AM - Attendance enabled',
+            'CSC 305 - Database normalisation Q&A - Monday 2:00 PM - Recording allowed',
           ],
         ),
       ],
@@ -567,6 +683,93 @@ class _LecturerCourseDeliveryFlowPanelState
         ),
       );
     });
+  }
+
+  Widget _studentEngagementFlow() {
+    return _FlowSection(
+      title: 'Student engagement supervision',
+      icon: Icons.groups_2_outlined,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.download_outlined),
+          label: const Text('Export engagement'),
+        ),
+        FilledButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.campaign_outlined),
+          label: const Text('Send reminder'),
+        ),
+      ],
+      children: const [
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _FlowChip(label: 'Active students: 284', icon: Icons.people_alt),
+            _FlowChip(
+              label: 'Low activity: 31',
+              icon: Icons.trending_down_outlined,
+            ),
+            _FlowChip(
+              label: 'Attendance risk: 18',
+              icon: Icons.event_busy_outlined,
+            ),
+            _FlowChip(
+              label: 'Unread feedback: 42',
+              icon: Icons.mark_chat_unread_outlined,
+            ),
+          ],
+        ),
+        SizedBox(height: 14),
+        _ExistingItemList(
+          title: 'Students needing lecturer attention',
+          items: [
+            'Aisha Musa - missed two live sessions - send attendance note',
+            'David Emmanuel - assignment feedback not viewed',
+            'Ibrahim Yahaya - active in Q&A but missing quiz attempt',
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _messagesQaFlow() {
+    return _FlowSection(
+      title: 'Course messages and Q&A',
+      icon: Icons.forum_outlined,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.push_pin_outlined),
+          label: const Text('Pin answer'),
+        ),
+        FilledButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.send_outlined),
+          label: const Text('Reply to class'),
+        ),
+      ],
+      children: const [
+        TextField(
+          minLines: 3,
+          maxLines: 5,
+          decoration: InputDecoration(
+            labelText: 'Lecturer response',
+            prefixIcon: Icon(Icons.reply_outlined),
+          ),
+        ),
+        SizedBox(height: 14),
+        _ExistingItemList(
+          title: 'Open student questions',
+          items: [
+            'Can the recursion clinic recording be shared after class?',
+            'Please clarify how Assignment 2 rubric awards presentation marks.',
+            'Will CBT objective questions be uploaded as practice samples?',
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _settingsFlow() {
@@ -1008,6 +1211,584 @@ class _CbtUploadPanel extends StatelessWidget {
   }
 }
 
+class _LecturerLiveRoomPanel extends StatelessWidget {
+  const _LecturerLiveRoomPanel({
+    required this.course,
+    required this.lecturerMicOn,
+    required this.lecturerCameraOn,
+    required this.attendanceRecording,
+    required this.students,
+    required this.onToggleLecturerMic,
+    required this.onToggleLecturerCamera,
+    required this.onToggleAttendance,
+    required this.onToggleStudentMic,
+    required this.onToggleStudentCamera,
+    required this.onApproveShare,
+    required this.onDenyShare,
+    required this.onRemoveStudent,
+  });
+
+  final String course;
+  final bool lecturerMicOn;
+  final bool lecturerCameraOn;
+  final bool attendanceRecording;
+  final List<_LiveStudentControl> students;
+  final VoidCallback onToggleLecturerMic;
+  final VoidCallback onToggleLecturerCamera;
+  final VoidCallback onToggleAttendance;
+  final ValueChanged<_LiveStudentControl> onToggleStudentMic;
+  final ValueChanged<_LiveStudentControl> onToggleStudentCamera;
+  final ValueChanged<_LiveStudentControl> onApproveShare;
+  final ValueChanged<_LiveStudentControl> onDenyShare;
+  final ValueChanged<_LiveStudentControl> onRemoveStudent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final presentStudents = students
+        .where((student) => student.present)
+        .toList();
+    final pendingShare = students
+        .where((student) => student.sharePending)
+        .toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(Icons.video_camera_front_outlined, color: scheme.primary),
+              Text(
+                'Lecturer live classroom control room',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              _MiniPill(label: '$course room'),
+              _MiniPill(label: '${presentStudents.length} present'),
+              _MiniPill(label: '${pendingShare.length} share pending'),
+              _MiniPill(
+                label: attendanceRecording
+                    ? 'Attendance recording'
+                    : 'Attendance paused',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth > 980;
+              final stageWidth = wide
+                  ? constraints.maxWidth * 0.58
+                  : constraints.maxWidth;
+              final sideWidth = wide
+                  ? constraints.maxWidth - stageWidth - 14
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  SizedBox(
+                    width: stageWidth,
+                    child: _LecturerStagePanel(
+                      course: course,
+                      lecturerMicOn: lecturerMicOn,
+                      lecturerCameraOn: lecturerCameraOn,
+                      attendanceRecording: attendanceRecording,
+                      onToggleLecturerMic: onToggleLecturerMic,
+                      onToggleLecturerCamera: onToggleLecturerCamera,
+                      onToggleAttendance: onToggleAttendance,
+                    ),
+                  ),
+                  SizedBox(
+                    width: sideWidth,
+                    child: _LecturerControlSidePanel(
+                      students: students,
+                      onToggleStudentMic: onToggleStudentMic,
+                      onToggleStudentCamera: onToggleStudentCamera,
+                      onApproveShare: onApproveShare,
+                      onDenyShare: onDenyShare,
+                      onRemoveStudent: onRemoveStudent,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LecturerStagePanel extends StatelessWidget {
+  const _LecturerStagePanel({
+    required this.course,
+    required this.lecturerMicOn,
+    required this.lecturerCameraOn,
+    required this.attendanceRecording,
+    required this.onToggleLecturerMic,
+    required this.onToggleLecturerCamera,
+    required this.onToggleAttendance,
+  });
+
+  final String course;
+  final bool lecturerMicOn;
+  final bool lecturerCameraOn;
+  final bool attendanceRecording;
+  final VoidCallback onToggleLecturerMic;
+  final VoidCallback onToggleLecturerCamera;
+  final VoidCallback onToggleAttendance;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 430),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101A2C),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              const _RoomPill(
+                icon: Icons.radio_button_checked,
+                label: 'Live class',
+              ),
+              _RoomPill(icon: Icons.school_outlined, label: course),
+              const _RoomPill(icon: Icons.schedule_outlined, label: '50 min'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AspectRatio(
+            aspectRatio: 16 / 8,
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF182C51),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      lecturerCameraOn
+                          ? Icons.videocam_outlined
+                          : Icons.videocam_off_outlined,
+                      color: Colors.white.withValues(alpha: 0.72),
+                      size: 56,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  bottom: 16,
+                  child: Text(
+                    'Dr. Musa Ibrahim',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: Container(
+                    width: 150,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.present_to_all_outlined,
+                      color: scheme.primary,
+                      size: 36,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: onToggleLecturerMic,
+                icon: Icon(lecturerMicOn ? Icons.mic : Icons.mic_off),
+                label: Text(lecturerMicOn ? 'Mute self' : 'Unmute self'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: onToggleLecturerCamera,
+                icon: Icon(
+                  lecturerCameraOn ? Icons.videocam : Icons.videocam_off,
+                ),
+                label: Text(lecturerCameraOn ? 'Camera off' : 'Camera on'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: onToggleAttendance,
+                icon: Icon(
+                  attendanceRecording
+                      ? Icons.fact_check_outlined
+                      : Icons.pause_circle_outline,
+                ),
+                label: Text(
+                  attendanceRecording
+                      ? 'Pause attendance'
+                      : 'Record attendance',
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.screen_share_outlined),
+                label: const Text('Share lecturer screen'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.stop_circle_outlined),
+                label: const Text('End class'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LecturerControlSidePanel extends StatelessWidget {
+  const _LecturerControlSidePanel({
+    required this.students,
+    required this.onToggleStudentMic,
+    required this.onToggleStudentCamera,
+    required this.onApproveShare,
+    required this.onDenyShare,
+    required this.onRemoveStudent,
+  });
+
+  final List<_LiveStudentControl> students;
+  final ValueChanged<_LiveStudentControl> onToggleStudentMic;
+  final ValueChanged<_LiveStudentControl> onToggleStudentCamera;
+  final ValueChanged<_LiveStudentControl> onApproveShare;
+  final ValueChanged<_LiveStudentControl> onDenyShare;
+  final ValueChanged<_LiveStudentControl> onRemoveStudent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final pendingShare = students
+        .where((student) => student.sharePending)
+        .toList();
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 430),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              _ControlTab(label: 'People', icon: Icons.groups_outlined),
+              _ControlTab(label: 'Q&A', icon: Icons.question_answer_outlined),
+              _ControlTab(label: 'Chat', icon: Icons.chat_outlined),
+              _ControlTab(label: 'Notes', icon: Icons.notes_outlined),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Screen-share approvals',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          if (pendingShare.isEmpty)
+            const _MutedPanelText('No student screen-share request pending.')
+          else
+            for (final student in pendingShare)
+              _ShareApprovalTile(
+                student: student,
+                onApprove: () => onApproveShare(student),
+                onDeny: () => onDenyShare(student),
+              ),
+          const SizedBox(height: 12),
+          Text(
+            'Attendance and student controls',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          for (final student in students)
+            _StudentControlTile(
+              student: student,
+              onToggleMic: () => onToggleStudentMic(student),
+              onToggleCamera: () => onToggleStudentCamera(student),
+              onRemove: () => onRemoveStudent(student),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShareApprovalTile extends StatelessWidget {
+  const _ShareApprovalTile({
+    required this.student,
+    required this.onApprove,
+    required this.onDeny,
+  });
+
+  final _LiveStudentControl student;
+  final VoidCallback onApprove;
+  final VoidCallback onDeny;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.screen_share_outlined, color: scheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${student.name} wants to share screen',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Approve screen share',
+            onPressed: onApprove,
+            icon: const Icon(Icons.check_circle_outline),
+          ),
+          IconButton(
+            tooltip: 'Deny screen share',
+            onPressed: onDeny,
+            icon: const Icon(Icons.cancel_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StudentControlTile extends StatelessWidget {
+  const _StudentControlTile({
+    required this.student,
+    required this.onToggleMic,
+    required this.onToggleCamera,
+    required this.onRemove,
+  });
+
+  final _LiveStudentControl student;
+  final VoidCallback onToggleMic;
+  final VoidCallback onToggleCamera;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = student.present ? scheme.primary : scheme.error;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: statusColor.withValues(alpha: 0.16),
+                child: Text(
+                  student.name
+                      .split(' ')
+                      .where((part) => part.isNotEmpty)
+                      .map((part) => part[0])
+                      .take(2)
+                      .join(),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student.name,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '${student.matricNo} • ${student.attendanceMinutes} min',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              _MiniPill(label: student.present ? 'Present' : 'Absent'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: student.present ? onToggleMic : null,
+                icon: Icon(student.micOn ? Icons.mic : Icons.mic_off),
+                label: Text(student.micOn ? 'Mute' : 'Unmute'),
+              ),
+              OutlinedButton.icon(
+                onPressed: student.present ? onToggleCamera : null,
+                icon: Icon(
+                  student.cameraOn ? Icons.videocam : Icons.videocam_off,
+                ),
+                label: Text(student.cameraOn ? 'Camera off' : 'Camera on'),
+              ),
+              OutlinedButton.icon(
+                onPressed: student.present ? onRemove : null,
+                icon: const Icon(Icons.person_remove_outlined),
+                label: const Text('Remove'),
+              ),
+              if (student.shareApproved) _MiniPill(label: 'Sharing approved'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoomPill extends StatelessWidget {
+  const _RoomPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ControlTab extends StatelessWidget {
+  const _ControlTab({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: scheme.primary),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MutedPanelText extends StatelessWidget {
+  const _MutedPanelText(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
 class _ExistingItemList extends StatelessWidget {
   const _ExistingItemList({required this.title, required this.items});
 
@@ -1092,4 +1873,26 @@ class _QuestionDraftItem {
   String question;
   String answer;
   String topic;
+}
+
+class _LiveStudentControl {
+  _LiveStudentControl({
+    required this.name,
+    required this.matricNo,
+    required this.present,
+    required this.micOn,
+    required this.cameraOn,
+    required this.sharePending,
+    required this.attendanceMinutes,
+    this.shareApproved = false,
+  });
+
+  final String name;
+  final String matricNo;
+  bool present;
+  bool micOn;
+  bool cameraOn;
+  bool sharePending;
+  bool shareApproved;
+  int attendanceMinutes;
 }

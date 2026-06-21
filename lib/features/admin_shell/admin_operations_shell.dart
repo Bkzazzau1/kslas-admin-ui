@@ -86,14 +86,25 @@ const _examOfficerPages = [
   _OpsPage('Moderation Tracking', Icons.rule_folder_outlined),
   _OpsPage('Exam Timetable', Icons.event_available_outlined),
   _OpsPage('Student Eligibility', Icons.groups_2_outlined),
-  _OpsPage('Invigilation / Proctoring', Icons.verified_user_outlined),
-  _OpsPage('Exam Attendance', Icons.how_to_reg_outlined),
-  _OpsPage('Malpractice Reports', Icons.gpp_maybe_outlined),
   _OpsPage('Result Collection', Icons.inbox_outlined),
   _OpsPage('Result Verification', Icons.workspace_premium_outlined),
   _OpsPage('Exam Complaints', Icons.support_agent_outlined),
   _OpsPage('Reports', Icons.analytics_outlined),
   _OpsPage('Profile', Icons.person_outline),
+];
+
+const _invigilatorPages = [
+  _OpsPage('Live Student Grid', Icons.grid_view_outlined),
+  _OpsPage('AI Alert Queue', Icons.notification_important_outlined),
+  _OpsPage('Evidence Review', Icons.perm_media_outlined),
+  _OpsPage('Manual Decisions', Icons.fact_check_outlined),
+  _OpsPage('Student Session Detail', Icons.person_search_outlined),
+  _OpsPage('Room Scan Requests', Icons.video_camera_front_outlined),
+  _OpsPage('Attendance & Check-in', Icons.how_to_reg_outlined),
+  _OpsPage('Risk Timeline', Icons.timeline_outlined),
+  _OpsPage('Malpractice Drafts', Icons.gpp_maybe_outlined),
+  _OpsPage('Evidence Sync Status', Icons.cloud_sync_outlined),
+  _OpsPage('Audit Trail', Icons.manage_history_outlined),
 ];
 
 const _academicRecordsPages = [
@@ -129,6 +140,25 @@ const _reportPages = [
   _OpsPage('Exports', Icons.download_outlined),
 ];
 
+bool _usesSectionOnlyWorkspace(AdminRole role) {
+  switch (role) {
+    case AdminRole.dlcDirector:
+    case AdminRole.departmentAdmin:
+    case AdminRole.facultyAdmin:
+    case AdminRole.hod:
+    case AdminRole.moderator:
+    case AdminRole.lecturer:
+    case AdminRole.levelAdviser:
+    case AdminRole.examOfficer:
+    case AdminRole.invigilator:
+    case AdminRole.recordsDepartment:
+    case AdminRole.supportTeam:
+    case AdminRole.reportsTeam:
+    case AdminRole.superAdmin:
+      return true;
+  }
+}
+
 List<_OpsPage> _pagesForRole(AdminRole role) {
   if (role == AdminRole.hod) {
     return _hodPages;
@@ -141,6 +171,9 @@ List<_OpsPage> _pagesForRole(AdminRole role) {
   }
   if (role == AdminRole.examOfficer) {
     return _examOfficerPages;
+  }
+  if (role == AdminRole.invigilator) {
+    return _invigilatorPages;
   }
   if (role == AdminRole.recordsDepartment) {
     return _academicRecordsPages;
@@ -166,6 +199,9 @@ String _workspaceTitleForRole(AdminRole role) {
   }
   if (role == AdminRole.examOfficer) {
     return 'Departmental Exam Officer';
+  }
+  if (role == AdminRole.invigilator) {
+    return 'Invigilator Dashboard';
   }
   if (role == AdminRole.recordsDepartment) {
     return 'Academic Records';
@@ -195,6 +231,9 @@ String _workspaceSubtitleForRole(AdminRole role) {
   if (role == AdminRole.examOfficer) {
     return 'Operational department exam coordination';
   }
+  if (role == AdminRole.invigilator) {
+    return 'Assigned exam monitoring, evidence review, check-in, and incident decisions only';
+  }
   if (role == AdminRole.recordsDepartment) {
     return 'Official student academic records custody';
   }
@@ -222,6 +261,9 @@ IconData _workspaceIconForRole(AdminRole role) {
   }
   if (role == AdminRole.examOfficer) {
     return Icons.assignment_turned_in_outlined;
+  }
+  if (role == AdminRole.invigilator) {
+    return Icons.verified_user_outlined;
   }
   if (role == AdminRole.recordsDepartment) {
     return Icons.badge_outlined;
@@ -368,7 +410,7 @@ class _AdminSideBar extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             for (var i = 0; i < pages.length; i++)
-              NavigationTile(
+              _NavigationTile(
                 page: pages[i],
                 selected: selectedPage == i,
                 onTap: () => onPageChanged(i),
@@ -380,9 +422,8 @@ class _AdminSideBar extends StatelessWidget {
   }
 }
 
-class NavigationTile extends StatelessWidget {
-  const NavigationTile({
-    super.key,
+class _NavigationTile extends StatelessWidget {
+  const _NavigationTile({
     required this.page,
     required this.selected,
     required this.onTap,
@@ -418,12 +459,19 @@ class _RoleDrawer extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Switch workspace', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Switch workspace',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             for (final role in AdminRole.values)
               RadioListTile<AdminRole>(
                 value: role,
+                // TODO: migrate this drawer list to RadioGroup after the app
+                // raises its minimum Flutter version past the transition.
+                // ignore: deprecated_member_use
                 groupValue: selectedRole,
+                // ignore: deprecated_member_use
                 onChanged: (role) {
                   if (role != null) {
                     onRoleChanged(role);
@@ -455,56 +503,70 @@ class _AdminOperationsWorkspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = repository.metricsForRole(selectedRole);
-    final tasks = repository.tasksForRole(selectedRole);
-    final workflows = repository.workflowForRole(selectedRole);
+    final metrics = repository.metricsFor(selectedRole);
+    final tasks = repository.tasksFor(selectedRole, pageLabel: pageLabel);
+    final workflows = repository.workflowsFor(pageLabel, role: selectedRole);
     final width = MediaQuery.sizeOf(context).width;
+    final sectionOnly = _usesSectionOnlyWorkspace(selectedRole);
 
     return SafeArea(
       child: CustomScrollView(
         slivers: [
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(
-              compact ? 16 : 28,
-              compact ? 8 : 24,
-              compact ? 16 : 28,
-              16,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: _Header(role: selectedRole, pageLabel: pageLabel),
-            ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 28),
-            sliver: SliverGrid.builder(
-              itemCount: metrics.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: compact
-                    ? 1
-                    : width > 1180
-                    ? 4
-                    : 2,
-                mainAxisExtent: AdminMetricCard.gridExtent,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+          if (!sectionOnly) ...[
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 28,
+                compact ? 8 : 24,
+                compact ? 16 : 28,
+                16,
               ),
-              itemBuilder: (context, index) =>
-                  AdminMetricCard(metric: metrics[index]),
+              sliver: SliverToBoxAdapter(
+                child: _Header(role: selectedRole, pageLabel: pageLabel),
+              ),
             ),
-          ),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 28),
+              sliver: SliverGrid.builder(
+                itemCount: metrics.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: compact
+                      ? 1
+                      : width > 1180
+                      ? 4
+                      : 2,
+                  mainAxisExtent: AdminMetricCard.gridExtent,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemBuilder: (context, index) =>
+                    AdminMetricCard(metric: metrics[index]),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 28,
+                18,
+                compact ? 16 : 28,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _WorkflowPanel(workflows: workflows),
+              ),
+            ),
+          ],
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
               compact ? 16 : 28,
-              18,
+              sectionOnly
+                  ? compact
+                        ? 8
+                        : 24
+                  : compact
+                  ? 16
+                  : 28,
               compact ? 16 : 28,
-              0,
+              compact ? 16 : 28,
             ),
-            sliver: SliverToBoxAdapter(
-              child: _WorkflowPanel(workflows: workflows),
-            ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.all(compact ? 16 : 28),
             sliver: SliverToBoxAdapter(
               child: _PrimaryPanel(
                 pageLabel: pageLabel,
@@ -567,12 +629,21 @@ class _PrimaryPanel extends StatelessWidget {
           pageLabel == 'Assignments' ||
           pageLabel == 'Quizzes & Tests' ||
           pageLabel == 'Exam Questions' ||
+          pageLabel == 'Student Engagement' ||
+          pageLabel == 'Messages / Q&A' ||
           pageLabel == 'Profile') {
         return LecturerCourseDeliveryFlowPanel(section: pageLabel);
       }
       if (pageLabel == 'Marking & Grading' ||
           pageLabel == 'Results Submission') {
-        return const LecturerAssignmentsMarkingPanel();
+        return LecturerAssignmentsMarkingPanel(section: pageLabel);
+      }
+      return _TaskPanel(tasks: tasks);
+    }
+
+    if (selectedRole == AdminRole.invigilator) {
+      if (_invigilatorPages.any((page) => page.label == pageLabel)) {
+        return InvigilatorEvidenceReviewPanel(section: pageLabel);
       }
       return _TaskPanel(tasks: tasks);
     }
@@ -593,13 +664,6 @@ class _PrimaryPanel extends StatelessWidget {
           pageLabel == 'Result Collection' ||
           pageLabel == 'Result Verification') {
         return const ResultsApprovalReleasePanel();
-      }
-      if (pageLabel == 'Invigilation / Proctoring' ||
-          pageLabel == 'Malpractice Reports') {
-        return InvigilatorEvidenceReviewPanel(section: pageLabel);
-      }
-      if (pageLabel == 'Exam Attendance') {
-        return const ExamSessionsOverviewPanel();
       }
       return _TaskPanel(tasks: tasks);
     }
@@ -623,8 +687,9 @@ class _PrimaryPanel extends StatelessWidget {
       return _TaskPanel(tasks: tasks);
     }
 
-    if (selectedRole == AdminRole.dlcDirector && pageLabel == 'Overview') {
-      return const DlcDirectorOverviewPanel();
+    if (selectedRole == AdminRole.dlcDirector &&
+        _operationsPages.any((page) => page.label == pageLabel)) {
+      return DlcDirectorSectionPanel(section: pageLabel);
     }
     if (pageLabel == 'Department Overview') {
       return const HodDepartmentOverviewPanel();
@@ -797,12 +862,62 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(child: Icon(task.icon)),
-      title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text('${task.owner} • ${task.due}'),
-      trailing: Text(task.status),
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = task.status.color(scheme);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(task.ownerRole.icon, color: statusColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(task.description),
+                const SizedBox(height: 4),
+                Text(
+                  '${task.ownerRole.label} • ${task.due}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          _StatusPill(status: task.status),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status});
+
+  final WorkStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = status.color(Theme.of(context).colorScheme);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          status.label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        ),
+      ),
     );
   }
 }
