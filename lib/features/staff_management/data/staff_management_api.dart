@@ -14,6 +14,17 @@ class StaffManagementApi {
     }).toList();
   }
 
+  Future<StaffReferenceData> fetchReferences() async {
+    final results = await Future.wait<dynamic>([
+      _client.get('/api/departments'),
+      _client.get('/api/courses'),
+    ]);
+    return StaffReferenceData(
+      departments: _referenceOptions(results[0], codeKey: 'code', titleKey: 'name'),
+      courses: _referenceOptions(results[1], codeKey: 'code', titleKey: 'title'),
+    );
+  }
+
   Future<void> createStaff(Map<String, dynamic> payload) async {
     await _client.post('/api/admin/staff', body: payload);
   }
@@ -29,7 +40,33 @@ class StaffManagementApi {
     await _client.post('/api/admin/staff-roles', body: payload);
   }
 
+  List<ReferenceOption> _referenceOptions(dynamic data, {required String codeKey, required String titleKey}) {
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((raw) {
+      final json = raw.map((key, value) => MapEntry(key.toString(), value));
+      final id = json['id']?.toString() ?? '';
+      final code = json[codeKey]?.toString() ?? '';
+      final title = json[titleKey]?.toString() ?? '';
+      final label = [code, title].where((part) => part.isNotEmpty).join(' • ');
+      return ReferenceOption(id: id, label: label.isEmpty ? id : label);
+    }).where((option) => option.id.isNotEmpty).toList();
+  }
+
   void close() => _client.close();
+}
+
+class StaffReferenceData {
+  const StaffReferenceData({required this.departments, required this.courses});
+
+  final List<ReferenceOption> departments;
+  final List<ReferenceOption> courses;
+}
+
+class ReferenceOption {
+  const ReferenceOption({required this.id, required this.label});
+
+  final String id;
+  final String label;
 }
 
 class StaffItem {
