@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/auth/auth_session.dart';
 import '../features/admin_shell/admin_operations_shell.dart';
 import '../features/lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../features/live_dashboard/widgets/live_dashboard_panel.dart';
@@ -12,6 +13,11 @@ class ConnectedAdminHome extends StatelessWidget {
     return Stack(
       children: [
         const AdminOperationsShell(),
+        Positioned(
+          right: 20,
+          top: 20,
+          child: _SessionCard(session: AuthSession.instance.session),
+        ),
         Positioned(
           right: 20,
           bottom: 20,
@@ -70,6 +76,50 @@ class ConnectedAdminHome extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SessionCard extends StatelessWidget {
+  const _SessionCard({required this.session});
+
+  final StaffSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final current = session;
+    if (current == null) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: scheme.primaryContainer,
+              foregroundColor: scheme.onPrimaryContainer,
+              child: const Icon(Icons.person_outline, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(current.name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+                Text(current.primaryRole.isEmpty ? 'Staff' : current.primaryRole, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: AuthSession.instance.signOut,
+              icon: const Icon(Icons.logout_outlined),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
