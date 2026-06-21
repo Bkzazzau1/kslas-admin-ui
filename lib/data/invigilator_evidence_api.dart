@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class InvigilatorEvidenceApi {
   InvigilatorEvidenceApi({
-    this.baseUrl = 'http://localhost:8080',
+    this.baseUrl = 'https://api.fazam.tech',
     this.authTokenProvider,
     http.Client? client,
   }) : _client = client ?? http.Client();

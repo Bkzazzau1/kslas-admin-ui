@@ -42,11 +42,13 @@ class AuthSession extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = prefs.getString(_tokenKey) ?? '';
     final token = savedToken.isNotEmpty ? savedToken : _envToken;
+
     if (token.isEmpty) {
       _session = null;
       notifyListeners();
       return;
     }
+
     _session = StaffSession(
       token: token,
       staffId: prefs.getString(_staffIdKey) ?? '',
@@ -55,14 +57,46 @@ class AuthSession extends ChangeNotifier {
       primaryRole: prefs.getString(_primaryRoleKey) ?? '',
       roles: prefs.getStringList(_rolesKey) ?? const [],
     );
+
     notifyListeners();
   }
 
   Future<void> saveLogin(Map<String, dynamic> json) async {
-    final token = json['token']?.toString() ?? '';
-    final staff = json['staff'] is Map ? Map<String, dynamic>.from(json['staff'] as Map) : <String, dynamic>{};
-    final rolesData = json['roles'];
-    final roles = rolesData is List ? rolesData.map((item) => item.toString()).toList() : <String>[];
+    final token =
+        json['access_token']?.toString() ?? json['token']?.toString() ?? '';
+
+    final staff = json['user'] is Map
+        ? Map<String, dynamic>.from(json['user'] as Map)
+        : json['staff'] is Map
+        ? Map<String, dynamic>.from(json['staff'] as Map)
+        : <String, dynamic>{};
+
+    final rawRoles = staff['roles'] ?? json['roles'];
+    final roles = <String>[];
+    var primaryRole = '';
+
+    if (rawRoles is List) {
+      for (final item in rawRoles) {
+        if (item is Map) {
+          final role =
+              item['code']?.toString() ?? item['name']?.toString() ?? '';
+          if (role.isNotEmpty) roles.add(role);
+
+          final isPrimary = item['is_primary'] == true;
+          if (isPrimary && role.isNotEmpty) {
+            primaryRole = role;
+          }
+        } else {
+          final role = item.toString();
+          if (role.isNotEmpty) roles.add(role);
+        }
+      }
+    }
+
+    if (primaryRole.isEmpty && roles.isNotEmpty) {
+      primaryRole = roles.first;
+    }
+
     final nameParts = [
       staff['title']?.toString() ?? '',
       staff['first_name']?.toString() ?? '',
@@ -72,9 +106,9 @@ class AuthSession extends ChangeNotifier {
     _session = StaffSession(
       token: token,
       staffId: staff['id']?.toString() ?? '',
-      email: staff['email']?.toString() ?? '',
+      email: staff['email']?.toString() ?? staff['identity']?.toString() ?? '',
       name: nameParts.isEmpty ? 'Staff member' : nameParts,
-      primaryRole: staff['primary_role']?.toString() ?? '',
+      primaryRole: primaryRole,
       roles: roles,
     );
 
@@ -85,6 +119,7 @@ class AuthSession extends ChangeNotifier {
     await prefs.setString(_nameKey, _session!.name);
     await prefs.setString(_primaryRoleKey, _session!.primaryRole);
     await prefs.setStringList(_rolesKey, roles);
+
     notifyListeners();
   }
 
@@ -96,6 +131,7 @@ class AuthSession extends ChangeNotifier {
     await prefs.remove(_nameKey);
     await prefs.remove(_primaryRoleKey);
     await prefs.remove(_rolesKey);
+
     _session = null;
     notifyListeners();
   }

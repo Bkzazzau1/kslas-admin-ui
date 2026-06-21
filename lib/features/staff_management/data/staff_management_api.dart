@@ -100,7 +100,7 @@ class StaffItem {
       id: json['id']?.toString() ?? '',
       staffNumber: json['staff_number']?.toString() ?? '',
       name: name.isEmpty ? 'Unnamed staff' : name,
-      email: json['email']?.toString() ?? '',
+      email: json['identity']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
       primaryRole: json['primary_role']?.toString() ?? 'lecturer',
       departmentId: json['department_id']?.toString() ?? '',

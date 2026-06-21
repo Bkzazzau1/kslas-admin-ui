@@ -17,8 +17,8 @@ class ApiException implements Exception {
 
 class ApiClient {
   ApiClient({http.Client? client, String? token})
-      : _client = client ?? http.Client(),
-        _token = token;
+    : _client = client ?? http.Client(),
+      _token = token;
 
   final http.Client _client;
   final String? _token;
@@ -44,11 +44,18 @@ class ApiClient {
   }
 
   Future<dynamic> get(String path, {Map<String, String>? query}) async {
-    final response = await _client.get(ApiConfig.uri(path, query), headers: _headers);
+    final response = await _client.get(
+      ApiConfig.uri(path, query),
+      headers: _headers,
+    );
     return _decode(response);
   }
 
-  Future<dynamic> post(String path, {Object? body, Map<String, String>? query}) async {
+  Future<dynamic> post(
+    String path, {
+    Object? body,
+    Map<String, String>? query,
+  }) async {
     final response = await _client.post(
       ApiConfig.uri(path, query),
       headers: _headers,
@@ -76,22 +83,38 @@ class ApiClient {
     final request = http.MultipartRequest('POST', ApiConfig.uri(path));
     request.headers.addAll(_authHeaders);
     request.fields['category'] = category;
-    request.files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName));
+    request.files.add(
+      http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName),
+    );
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     return _decode(response);
   }
 
   dynamic _decode(http.Response response) {
-    final body = response.body.isEmpty ? null : jsonDecode(response.body);
+    dynamic body;
+
+    if (response.body.isEmpty) {
+      body = null;
+    } else {
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        body = response.body;
+      }
+    }
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final message = body is Map && body['message'] != null
           ? body['message'].toString()
           : body is Map && body['error'] != null
-              ? body['error'].toString()
-              : 'Request failed';
+          ? body['error'].toString()
+          : body is String && body.trim().isNotEmpty
+          ? body.trim()
+          : 'Request failed';
       throw ApiException(message, statusCode: response.statusCode);
     }
+
     return body;
   }
 

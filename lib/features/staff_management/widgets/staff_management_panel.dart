@@ -288,7 +288,7 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
       'title': _title.text.trim(),
       'first_name': _firstName.text.trim(),
       'last_name': _lastName.text.trim(),
-      'email': _email.text.trim(),
+      'identity': _email.text.trim(),
       'phone': _phone.text.trim(),
       'primary_role': _role,
       'password': _password.text,
