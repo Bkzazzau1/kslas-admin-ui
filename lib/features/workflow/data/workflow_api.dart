@@ -6,17 +6,21 @@ class WorkflowApi {
   final ApiClient _client;
 
   Future<WorkflowDashboardData> fetchDashboard() async {
-    final results = await Future.wait<dynamic>([
-      _client.get('/api/lecturer/assignments'),
-      _client.get('/api/lecturer/ca-submissions'),
-      _client.get('/api/lecturer/marked-exam-scripts'),
-    ]);
+    try {
+      final results = await Future.wait<dynamic>([
+        _client.get('/api/lecturer/assignments'),
+        _client.get('/api/lecturer/ca-submissions'),
+        _client.get('/api/lecturer/marked-exam-scripts'),
+      ]);
 
-    return WorkflowDashboardData(
-      assignments: _parseList(results[0]),
-      caSubmissions: _parseList(results[1]),
-      markedScripts: _parseList(results[2]),
-    );
+      return WorkflowDashboardData(
+        assignments: _parseList(results[0]),
+        caSubmissions: _parseList(results[1]),
+        markedScripts: _parseList(results[2]),
+      );
+    } catch (_) {
+      return const WorkflowDashboardData(assignments: [], caSubmissions: [], markedScripts: []);
+    }
   }
 
   List<WorkflowItem> _parseList(dynamic data) {
