@@ -62,6 +62,22 @@ class RoleDashboardApi {
     );
   }
 
+  Future<List<ReferenceOption>> fetchCourses() async {
+    final data = await _client.get('/api/lecturer/courses');
+    return _referenceOptions(data, fallbackTitle: 'Course');
+  }
+
+  Future<List<ReferenceOption>> fetchAssessments() async {
+    final data = await _client.get('/api/lecturer/assessments');
+    return _referenceOptions(data, fallbackTitle: 'Assessment');
+  }
+
+  Future<String> uploadFile({required List<int> bytes, required String fileName, required String category}) async {
+    final data = await _client.uploadBytes(path: '/api/uploads', bytes: bytes, fileName: fileName, category: category);
+    if (data is Map) return data['file_url']?.toString() ?? '';
+    return '';
+  }
+
   Future<void> examOfficerAssessmentAction(String id, String action, String feedback) async {
     await _client.post('/api/exam-officer/assessments/$id/$action', body: {'feedback': feedback});
   }
@@ -88,6 +104,20 @@ class RoleDashboardApi {
 
   Future<void> submitMarkedScripts(Map<String, dynamic> payload) async {
     await _client.post('/api/lecturer/marked-exam-scripts', body: payload);
+  }
+
+  List<ReferenceOption> _referenceOptions(dynamic data, {required String fallbackTitle}) {
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((raw) {
+      final json = raw.map((key, value) => MapEntry(key.toString(), value));
+      final course = json['course'];
+      final nestedCourse = course is Map ? course.map((key, value) => MapEntry(key.toString(), value)) : null;
+      final id = json['id']?.toString() ?? json['course_id']?.toString() ?? nestedCourse?['id']?.toString() ?? '';
+      final code = json['code']?.toString() ?? nestedCourse?['code']?.toString() ?? '';
+      final title = json['title']?.toString() ?? nestedCourse?['title']?.toString() ?? fallbackTitle;
+      final label = [code, title].where((part) => part.isNotEmpty).join(' • ');
+      return ReferenceOption(id: id, label: label.isEmpty ? id : label);
+    }).where((option) => option.id.isNotEmpty).toList();
   }
 
   List<RoleDashboardItem> _items(dynamic data, String titleKey, String statusKey, String resourceType) {
@@ -119,19 +149,19 @@ class RoleDashboardApi {
         final courses = summary['assigned_courses']?.toString() ?? '0';
         final pending = summary['pending_marking']?.toString() ?? '0';
         final submissions = summary['submissions_received']?.toString() ?? '0';
-        return RoleDashboardItem(
-          id: '',
-          resourceType: 'analytics',
-          title: '$courses courses • $submissions submissions',
-          subtitle: 'Pending marking: $pending',
-          status: 'live',
-        );
+        return RoleDashboardItem(id: '', resourceType: 'analytics', title: '$courses courses • $submissions submissions', subtitle: 'Pending marking: $pending', status: 'live');
       }
     }
     return const RoleDashboardItem(id: '', resourceType: 'analytics', title: 'Analytics unavailable', subtitle: 'No live summary returned yet', status: 'pending');
   }
 
   void close() => _client.close();
+}
+
+class ReferenceOption {
+  const ReferenceOption({required this.id, required this.label});
+  final String id;
+  final String label;
 }
 
 class RoleDashboardData {
@@ -159,6 +189,4 @@ class RoleDashboardItem {
   final String status;
 }
 
-extension _FirstOrNull<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
-}
+extension _FirstOrNull<T> on Iterable<T> { T? get firstOrNull => isEmpty ? null : first; }
