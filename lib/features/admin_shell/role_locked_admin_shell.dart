@@ -6,6 +6,7 @@ import '../live_dashboard/widgets/live_dashboard_panel.dart';
 import '../live_dashboard/widgets/notification_bell.dart';
 import '../role_dashboard/widgets/role_dashboard_panel.dart';
 import '../role_dashboard/widgets/workflow_forms_panel.dart';
+import '../staff_management/widgets/staff_management_panel.dart';
 import '../workflow/widgets/workflow_live_panel.dart';
 import 'admin_operations_shell.dart';
 
@@ -105,6 +106,7 @@ List<_LockedPage> _pagesForRole(String role) {
 
 final _adminPages = [
   _LockedPage('Full console', Icons.dashboard_customize_outlined, (_) => const AdminOperationsShell()),
+  _LockedPage('Staff management', Icons.badge_outlined, (_) => const _PanelHost(child: StaffManagementPanel())),
   _LockedPage('My role', Icons.admin_panel_settings_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Smart forms', Icons.dynamic_form_outlined, (_) => const _PanelHost(child: WorkflowFormsPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
@@ -113,6 +115,7 @@ final _adminPages = [
 ];
 
 final _hodPages = [
+  _LockedPage('Staff management', Icons.badge_outlined, (_) => const _PanelHost(child: StaffManagementPanel())),
   _LockedPage('My role', Icons.account_tree_outlined, (_) => const _PanelHost(child: RoleDashboardPanel())),
   _LockedPage('Live dashboard', Icons.insights_outlined, (_) => const _PanelHost(child: LiveDashboardPanel())),
   _LockedPage('Live workflow', Icons.account_tree_outlined, (_) => const _PanelHost(child: WorkflowLivePanel())),
