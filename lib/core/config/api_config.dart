@@ -7,8 +7,9 @@ class ApiConfig {
   );
 
   static String get baseUrl {
-    if (_definedBaseUrl.isNotEmpty) {
-      return _stripTrailingSlash(_definedBaseUrl);
+    final defined = _definedBaseUrl.trim();
+    if (defined.isNotEmpty && !_isPlaceholder(defined)) {
+      return _stripTrailingSlash(defined);
     }
 
     final currentOrigin = Uri.base.origin;
@@ -24,6 +25,14 @@ class ApiConfig {
     return Uri.parse('$baseUrl$cleanPath').replace(
       queryParameters: queryParameters,
     );
+  }
+
+  static bool _isPlaceholder(String value) {
+    final lower = value.toLowerCase();
+    return lower.contains('your_backend_host') ||
+        lower.contains('your-backend-host') ||
+        lower.contains('your_backend_domain') ||
+        lower.contains('example.com');
   }
 
   static String _stripTrailingSlash(String value) {
