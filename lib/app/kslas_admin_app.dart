@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../features/admin_shell/admin_operations_shell.dart';
+import 'connected_admin_home.dart';
 import 'kslas_theme.dart';
 
 class KslasAdminApp extends StatelessWidget {
@@ -13,7 +13,7 @@ class KslasAdminApp extends StatelessWidget {
       title: 'KSLAS Admin',
       theme: KslasTheme.light(),
       darkTheme: KslasTheme.dark(),
-      home: const AdminOperationsShell(),
+      home: const ConnectedAdminHome(),
     );
   }
 }
