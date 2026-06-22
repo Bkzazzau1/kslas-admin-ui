@@ -50,6 +50,14 @@ class StaffManagementApi {
     await _client.post('/api/staff', body: payload);
   }
 
+  Future<void> resetPassword({required String staffId, required String password}) async {
+    await _client.post('/api/staff/$staffId/reset-password', body: {'password': password});
+  }
+
+  Future<void> updateStaffStatus({required String staffId, required bool active}) async {
+    await _client.patch('/api/staff/$staffId/status', body: {'status': active ? 'active' : 'inactive'});
+  }
+
   Future<void> assignRole({required String staffId, required String role, String? departmentId, String? courseId}) async {
     final payload = <String, dynamic>{
       'staff_id': staffId,
@@ -141,14 +149,22 @@ class StaffItem {
 }
 
 const staffRoleOptions = [
-  'lecturer',
-  'exam_officer',
-  'moderator',
+  'system_admin',
+  'academic_admin',
+  'dean',
   'hod',
+  'programme_coordinator',
+  'exam_officer',
+  'lecturer',
+  'moderator',
+  'proctor',
+  'content_manager',
+  'registry_officer',
+  'student_affairs',
+  'marker',
+  'teaching_assistant',
   'dlc_director',
   'level_adviser',
   'invigilator',
   'academic_records',
-  'admin',
-  'system_admin',
 ];
