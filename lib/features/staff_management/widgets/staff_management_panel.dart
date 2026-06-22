@@ -45,12 +45,12 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     }
   }
 
-  Future<void> _run(Future<void> Function() action) async {
+  Future<void> _run(Future<void> Function() action, {String successMessage = 'Saved successfully'}) async {
     setState(() => _busy = true);
     try {
       await action();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
       _reload();
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -68,7 +68,7 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     if (!mounted) return;
     final payload = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => _CreateStaffDialog(references: refs));
     if (payload == null) return;
-    await _run(() => _api.createStaff(payload));
+    await _run(() => _api.createStaff(payload), successMessage: 'Staff account created');
   }
 
   Future<void> _openAssignRole(StaffItem staff) async {
@@ -77,6 +77,32 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     final payload = await showDialog<Map<String, String>>(context: context, builder: (_) => _AssignRoleDialog(staff: staff, references: refs));
     if (payload == null) return;
     await _run(() => _api.assignRole(staffId: staff.id, role: payload['role'] ?? 'lecturer', departmentId: payload['department_id'], courseId: payload['course_id']));
+  }
+
+  Future<void> _openResetPassword(StaffItem staff) async {
+    final password = await showDialog<String>(context: context, builder: (_) => _ResetPasswordDialog(staff: staff));
+    if (password == null || password.isEmpty) return;
+    await _run(() => _api.resetPassword(staffId: staff.id, password: password), successMessage: 'Password reset successfully');
+  }
+
+  Future<void> _toggleStaffStatus(StaffItem staff) async {
+    final nextActive = !staff.active;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(nextActive ? 'Activate staff' : 'Deactivate staff'),
+        content: Text(nextActive ? 'Allow ${staff.name} to access the system again?' : 'Stop ${staff.name} from accessing the system?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(nextActive ? 'Activate' : 'Deactivate')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _run(
+      () => _api.updateStaffStatus(staffId: staff.id, active: nextActive),
+      successMessage: nextActive ? 'Staff activated' : 'Staff deactivated',
+    );
   }
 
   @override
@@ -136,10 +162,25 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
                 if (staff.isEmpty) return const _EmptyStaffState();
                 return LayoutBuilder(
                   builder: (context, constraints) {
-                    if (constraints.maxWidth < 720) {
-                      return Column(children: [for (final item in staff) _StaffCard(item: item, onAssignRole: () => _openAssignRole(item))]);
+                    if (constraints.maxWidth < 760) {
+                      return Column(
+                        children: [
+                          for (final item in staff)
+                            _StaffCard(
+                              item: item,
+                              onAssignRole: () => _openAssignRole(item),
+                              onResetPassword: () => _openResetPassword(item),
+                              onToggleStatus: () => _toggleStaffStatus(item),
+                            ),
+                        ],
+                      );
                     }
-                    return _StaffTable(staff: staff, onAssignRole: _openAssignRole);
+                    return _StaffTable(
+                      staff: staff,
+                      onAssignRole: _openAssignRole,
+                      onResetPassword: _openResetPassword,
+                      onToggleStatus: _toggleStaffStatus,
+                    );
                   },
                 );
               },
@@ -152,10 +193,12 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
 }
 
 class _StaffTable extends StatelessWidget {
-  const _StaffTable({required this.staff, required this.onAssignRole});
+  const _StaffTable({required this.staff, required this.onAssignRole, required this.onResetPassword, required this.onToggleStatus});
 
   final List<StaffItem> staff;
   final ValueChanged<StaffItem> onAssignRole;
+  final ValueChanged<StaffItem> onResetPassword;
+  final ValueChanged<StaffItem> onToggleStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +208,7 @@ class _StaffTable extends StatelessWidget {
         DataColumn(label: Text('Email')),
         DataColumn(label: Text('Primary role')),
         DataColumn(label: Text('Status')),
-        DataColumn(label: Text('Action')),
+        DataColumn(label: Text('Actions')),
       ],
       rows: [
         for (final item in staff)
@@ -174,7 +217,16 @@ class _StaffTable extends StatelessWidget {
             DataCell(Text(item.email)),
             DataCell(Chip(label: Text(item.primaryRole), visualDensity: VisualDensity.compact)),
             DataCell(Text(item.active ? 'Active' : 'Inactive')),
-            DataCell(TextButton.icon(onPressed: () => onAssignRole(item), icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Assign role'))),
+            DataCell(
+              Wrap(
+                spacing: 6,
+                children: [
+                  TextButton.icon(onPressed: () => onResetPassword(item), icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset')),
+                  TextButton.icon(onPressed: () => onToggleStatus(item), icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
+                  TextButton.icon(onPressed: () => onAssignRole(item), icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Role')),
+                ],
+              ),
+            ),
           ]),
       ],
     );
@@ -182,20 +234,37 @@ class _StaffTable extends StatelessWidget {
 }
 
 class _StaffCard extends StatelessWidget {
-  const _StaffCard({required this.item, required this.onAssignRole});
+  const _StaffCard({required this.item, required this.onAssignRole, required this.onResetPassword, required this.onToggleStatus});
 
   final StaffItem item;
   final VoidCallback onAssignRole;
+  final VoidCallback onResetPassword;
+  final VoidCallback onToggleStatus;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${item.email}\n${item.staffNumber}'),
-        isThreeLine: true,
-        trailing: TextButton(onPressed: onAssignRole, child: const Text('Role')),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text('${item.email}\n${item.staffNumber}\n${item.active ? 'Active' : 'Inactive'}'),
+              isThreeLine: true,
+            ),
+            Wrap(
+              spacing: 6,
+              children: [
+                TextButton.icon(onPressed: onResetPassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset')),
+                TextButton.icon(onPressed: onToggleStatus, icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
+                TextButton.icon(onPressed: onAssignRole, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Role')),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -284,18 +353,19 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
 
   Map<String, dynamic> _payload() {
     final payload = <String, dynamic>{
-      'staff_number': _staffNumber.text.trim(),
-      'title': _title.text.trim(),
+      'staff_id': _staffNumber.text.trim(),
+      'middle_name': _title.text.trim(),
       'first_name': _firstName.text.trim(),
       'last_name': _lastName.text.trim(),
-      'identity': _email.text.trim(),
+      'email': _email.text.trim(),
       'phone': _phone.text.trim(),
-      'primary_role': _role,
+      'role_code': _role,
       'password': _password.text,
-      'is_active': true,
+      'gender': 'not_specified',
     };
     final departmentId = _departmentId ?? _fallbackDepartmentId.text.trim();
-    if (departmentId.isNotEmpty) payload['department_id'] = departmentId;
+    final numericDepartmentId = int.tryParse(departmentId);
+    if (numericDepartmentId != null) payload['department_id'] = numericDepartmentId;
     return payload;
   }
 }
@@ -363,6 +433,52 @@ class _AssignRoleDialogState extends State<_AssignRoleDialog> {
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.of(context).pop({'role': _role, 'department_id': _departmentId ?? _fallbackDepartmentId.text.trim(), 'course_id': _courseId ?? _fallbackCourseId.text.trim()}), child: const Text('Assign')),
+      ],
+    );
+  }
+}
+
+class _ResetPasswordDialog extends StatefulWidget {
+  const _ResetPasswordDialog({required this.staff});
+
+  final StaffItem staff;
+
+  @override
+  State<_ResetPasswordDialog> createState() => _ResetPasswordDialogState();
+}
+
+class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
+  final _password = TextEditingController();
+  bool _visible = false;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Reset password for ${widget.staff.name}'),
+      content: SizedBox(
+        width: 420,
+        child: TextField(
+          controller: _password,
+          obscureText: !_visible,
+          decoration: InputDecoration(
+            labelText: 'New temporary password',
+            helperText: 'Give this password to the staff member securely.',
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => _visible = !_visible),
+              icon: Icon(_visible ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.of(context).pop(_password.text), child: const Text('Reset')),
       ],
     );
   }
