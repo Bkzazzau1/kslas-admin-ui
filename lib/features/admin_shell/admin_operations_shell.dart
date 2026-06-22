@@ -5,6 +5,7 @@ import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
 import 'workspaces/academic_records_overview_panel.dart';
 import 'workspaces/academic_structure_panel.dart';
+import '../academic_setup/widgets/academic_setup_panel.dart';
 import 'workspaces/cohort_management_panel.dart';
 import 'workspaces/course_registration_approval_panel.dart';
 import 'workspaces/departmental_exam_officer_overview_panel.dart';
@@ -23,6 +24,7 @@ import 'workspaces/records_department_panel.dart';
 import 'workspaces/reports_analytics_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
 import 'workspaces/student_support_helpdesk_panel.dart';
+import '../staff_management/widgets/staff_management_panel.dart';
 import 'widgets/admin_metric_card.dart';
 
 const _operationsPages = [
@@ -695,7 +697,7 @@ class _PrimaryPanel extends StatelessWidget {
       return const HodDepartmentOverviewPanel();
     }
     if (pageLabel == 'Departments & Programmes') {
-      return const AcademicStructurePanel();
+      return const AcademicSetupPanel();
     }
     if (pageLabel == 'Student Management') {
       return const CohortManagementPanel();
@@ -704,7 +706,7 @@ class _PrimaryPanel extends StatelessWidget {
       return const RecordsDepartmentPanel();
     }
     if (pageLabel == 'Course Management') {
-      return const CourseRegistrationApprovalPanel();
+      return const AcademicSetupPanel();
     }
     if (pageLabel == 'Courses') {
       return const CourseRegistrationApprovalPanel();
@@ -740,7 +742,7 @@ class _PrimaryPanel extends StatelessWidget {
       return const ResultsApprovalReleasePanel();
     }
     if (pageLabel == 'Staff Management') {
-      return const PeopleAccessControlPanel();
+      return const StaffManagementPanel();
     }
     return _TaskPanel(tasks: tasks);
   }
