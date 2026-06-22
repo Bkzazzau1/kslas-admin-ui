@@ -7,8 +7,8 @@ class StaffAuthApi {
 
   Future<Map<String, dynamic>> login({required String email, required String password}) async {
     final data = await _client.post(
-      '/api/auth/staff/login',
-      body: {'email': email.trim(), 'password': password},
+      '/api/auth/login',
+      body: {'identity': email.trim(), 'password': password},
     );
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return data.map((key, value) => MapEntry(key.toString(), value));
