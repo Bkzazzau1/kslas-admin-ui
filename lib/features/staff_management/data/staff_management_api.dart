@@ -7,9 +7,11 @@ class StaffManagementApi {
 
   Future<List<StaffItem>> fetchStaff() async {
     try {
-      final data = await _client.get('/api/admin/staff');
-      if (data is! List) return const [];
-      return data.whereType<Map>().map((raw) {
+      final data = await _client.get('/api/staff');
+      dynamic rows = data;
+      if (data is Map) rows = data['items'] ?? data['data'] ?? data['results'];
+      if (rows is! List) return const [];
+      return rows.whereType<Map>().map((raw) {
         final json = raw.map((key, value) => MapEntry(key.toString(), value));
         return StaffItem.fromJson(json);
       }).toList();
@@ -117,15 +119,23 @@ class StaffItem {
       json['first_name']?.toString() ?? '',
       json['last_name']?.toString() ?? '',
     ].where((part) => part.trim().isNotEmpty).join(' ');
+    final roles = json['roles'];
+    String role = json['primary_role']?.toString() ?? json['role']?.toString() ?? '';
+    String departmentId = json['department_id']?.toString() ?? '';
+    if (role.isEmpty && roles is List && roles.isNotEmpty && roles.first is Map) {
+      final firstRole = (roles.first as Map).map((key, value) => MapEntry(key.toString(), value));
+      role = firstRole['code']?.toString() ?? '';
+      departmentId = firstRole['scope_id']?.toString() ?? departmentId;
+    }
     return StaffItem(
       id: json['id']?.toString() ?? '',
-      staffNumber: json['staff_number']?.toString() ?? '',
+      staffNumber: json['staff_number']?.toString() ?? json['staff_id']?.toString() ?? '',
       name: name.isEmpty ? 'Unnamed staff' : name,
       email: json['email']?.toString() ?? json['identity']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
-      primaryRole: json['primary_role']?.toString() ?? json['role']?.toString() ?? 'lecturer',
-      departmentId: json['department_id']?.toString() ?? '',
-      active: json['is_active'] != false,
+      primaryRole: role.isEmpty ? 'lecturer' : role,
+      departmentId: departmentId,
+      active: (json['status']?.toString() ?? 'active') == 'active' && json['is_active'] != false,
     );
   }
 }
