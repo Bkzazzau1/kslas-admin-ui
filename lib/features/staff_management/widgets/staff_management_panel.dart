@@ -202,32 +202,16 @@ class _StaffTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Staff')),
-        DataColumn(label: Text('Email')),
-        DataColumn(label: Text('Primary role')),
-        DataColumn(label: Text('Status')),
-        DataColumn(label: Text('Actions')),
-      ],
-      rows: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         for (final item in staff)
-          DataRow(cells: [
-            DataCell(Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)), Text(item.staffNumber)])),
-            DataCell(Text(item.email)),
-            DataCell(Chip(label: Text(item.primaryRole), visualDensity: VisualDensity.compact)),
-            DataCell(Text(item.active ? 'Active' : 'Inactive')),
-            DataCell(
-              Wrap(
-                spacing: 6,
-                children: [
-                  TextButton.icon(onPressed: () => onResetPassword(item), icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset')),
-                  TextButton.icon(onPressed: () => onToggleStatus(item), icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
-                  TextButton.icon(onPressed: () => onAssignRole(item), icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Role')),
-                ],
-              ),
-            ),
-          ]),
+          _StaffCard(
+            item: item,
+            onAssignRole: () => onAssignRole(item),
+            onResetPassword: () => onResetPassword(item),
+            onToggleStatus: () => onToggleStatus(item),
+          ),
       ],
     );
   }
@@ -243,28 +227,63 @@ class _StaffCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: Text('${item.email}\n${item.staffNumber}\n${item.active ? 'Active' : 'Inactive'}'),
-              isThreeLine: true,
-            ),
-            Wrap(
-              spacing: 6,
-              children: [
-                TextButton.icon(onPressed: onResetPassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset')),
-                TextButton.icon(onPressed: onToggleStatus, icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
-                TextButton.icon(onPressed: onAssignRole, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Role')),
-              ],
-            ),
-          ],
-        ),
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = item.active ? scheme.primaryContainer : scheme.errorContainer;
+    final statusTextColor = item.active ? scheme.onPrimaryContainer : scheme.onErrorContainer;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant),
+        color: scheme.surface,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: scheme.secondaryContainer,
+                foregroundColor: scheme.onSecondaryContainer,
+                child: const Icon(Icons.person_outline),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    Text(item.email),
+                    const SizedBox(height: 4),
+                    Text(item.staffNumber, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    const SizedBox(height: 8),
+                    Chip(label: Text(item.primaryRole), visualDensity: VisualDensity.compact),
+                  ],
+                ),
+              ),
+              Chip(
+                label: Text(item.active ? 'Active' : 'Inactive'),
+                backgroundColor: statusColor,
+                labelStyle: TextStyle(color: statusTextColor, fontWeight: FontWeight.w700),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.icon(onPressed: onResetPassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset password')),
+              OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
+              TextButton.icon(onPressed: onAssignRole, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Assign role')),
+            ],
+          ),
+        ],
       ),
     );
   }
