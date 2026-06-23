@@ -95,6 +95,14 @@ const _examOfficerPages = [
   _OpsPage('Profile', Icons.person_outline),
 ];
 
+const _moderatorPages = [
+  _OpsPage('Review Dashboard', Icons.dashboard_outlined),
+  _OpsPage('Question Papers', Icons.rule_folder_outlined),
+  _OpsPage('Returned Papers', Icons.assignment_return_outlined),
+  _OpsPage('Review History', Icons.manage_history_outlined),
+  _OpsPage('Profile', Icons.person_outline),
+];
+
 const _invigilatorPages = [
   _OpsPage('Live Student Grid', Icons.grid_view_outlined),
   _OpsPage('AI Alert Queue', Icons.notification_important_outlined),
@@ -174,6 +182,9 @@ List<_OpsPage> _pagesForRole(AdminRole role) {
   if (role == AdminRole.examOfficer) {
     return _examOfficerPages;
   }
+  if (role == AdminRole.moderator) {
+    return _moderatorPages;
+  }
   if (role == AdminRole.invigilator) {
     return _invigilatorPages;
   }
@@ -195,6 +206,9 @@ String _workspaceTitleForRole(AdminRole role) {
   }
   if (role == AdminRole.lecturer) {
     return 'Lecturer Workspace';
+  }
+  if (role == AdminRole.moderator) {
+    return 'Moderator';
   }
   if (role == AdminRole.levelAdviser) {
     return 'Level Adviser Workspace';
@@ -227,6 +241,9 @@ String _workspaceSubtitleForRole(AdminRole role) {
   if (role == AdminRole.lecturer) {
     return 'Assigned course delivery';
   }
+  if (role == AdminRole.moderator) {
+    return 'Question review and quality checks';
+  }
   if (role == AdminRole.levelAdviser) {
     return 'Assigned level student monitoring';
   }
@@ -257,6 +274,9 @@ IconData _workspaceIconForRole(AdminRole role) {
   }
   if (role == AdminRole.lecturer) {
     return Icons.school_outlined;
+  }
+  if (role == AdminRole.moderator) {
+    return Icons.rule_folder_outlined;
   }
   if (role == AdminRole.levelAdviser) {
     return Icons.person_search_outlined;
@@ -680,6 +700,23 @@ class _PrimaryPanel extends StatelessWidget {
       return _TaskPanel(tasks: tasks);
     }
 
+    if (selectedRole == AdminRole.moderator) {
+      if (pageLabel == 'Review Dashboard' ||
+          pageLabel == 'Question Papers' ||
+          pageLabel == 'Returned Papers' ||
+          pageLabel == 'Review History') {
+        return const ModeratorQuestionReviewPanel(
+          mode: QuestionReviewMode.moderator,
+        );
+      }
+      if (pageLabel == 'Profile') {
+        return _TaskPanel(tasks: tasks);
+      }
+      return const ModeratorQuestionReviewPanel(
+        mode: QuestionReviewMode.moderator,
+      );
+    }
+
     if (selectedRole == AdminRole.invigilator) {
       if (_invigilatorPages.any((page) => page.label == pageLabel)) {
         return InvigilatorEvidenceReviewPanel(section: pageLabel);
@@ -697,7 +734,9 @@ class _PrimaryPanel extends StatelessWidget {
       }
       if (pageLabel == 'Question Submission' ||
           pageLabel == 'Moderation Tracking') {
-        return const ModeratorQuestionReviewPanel();
+        return const ModeratorQuestionReviewPanel(
+          mode: QuestionReviewMode.examOfficer,
+        );
       }
       if (pageLabel == 'Student Eligibility' ||
           pageLabel == 'Result Collection' ||
@@ -770,10 +809,14 @@ class _PrimaryPanel extends StatelessWidget {
       return const RecordsDepartmentPanel();
     }
     if (pageLabel == 'Approvals') {
-      return const ModeratorQuestionReviewPanel();
+      return const ModeratorQuestionReviewPanel(
+        mode: QuestionReviewMode.examOfficer,
+      );
     }
     if (pageLabel == 'Moderation Status') {
-      return const ModeratorQuestionReviewPanel();
+      return const ModeratorQuestionReviewPanel(
+        mode: QuestionReviewMode.examOfficer,
+      );
     }
     if (pageLabel == 'Results') {
       return const ResultsApprovalReleasePanel();
