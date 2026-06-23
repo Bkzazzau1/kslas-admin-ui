@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../exam_workflow/data/exam_workflow_api.dart';
+
 class ModeratorQuestionReviewPanel extends StatefulWidget {
   const ModeratorQuestionReviewPanel({super.key});
 
@@ -10,95 +12,233 @@ class ModeratorQuestionReviewPanel extends StatefulWidget {
 
 class _ModeratorQuestionReviewPanelState
     extends State<ModeratorQuestionReviewPanel> {
-  String _selectedStatus = 'All';
-  String _selectedFormat = 'All';
+  final ExamWorkflowApi _api = ExamWorkflowApi();
 
-  static const _questionSets = [
-    _QuestionSet(
-      courseCode: 'CSC 305',
-      title: 'Data Structures Final CBT',
-      lecturer: 'Dr. A. Musa',
-      format: 'Mixed CBT',
-      questions: 60,
-      marks: 70,
-      status: 'Ready to Approve',
-      issueCount: 0,
-      note: 'Question spread and difficulty balance passed moderation checks.',
-    ),
-    _QuestionSet(
-      courseCode: 'CSC 309',
-      title: 'AI Search Strategy Assessment',
-      lecturer: 'Dr. L. Ibrahim',
-      format: 'Essay + Objective',
-      questions: 35,
-      marks: 100,
-      status: 'Return to Lecturer',
-      issueCount: 4,
-      note:
-          'Essay rubric is incomplete and two objective questions have ambiguous options.',
-    ),
-    _QuestionSet(
-      courseCode: 'SEN 301',
-      title: 'Requirements Engineering Practical',
-      lecturer: 'Engr. H. Sani',
-      format: 'Practical + Whiteboard',
-      questions: 12,
-      marks: 100,
-      status: 'Needs Review',
-      issueCount: 2,
-      note: 'Whiteboard marking guide needs clearer scoring breakdown.',
-    ),
-    _QuestionSet(
-      courseCode: 'GST 303',
-      title: 'Communication in English',
-      lecturer: 'Mrs. H. John',
-      format: 'Objective',
-      questions: 80,
-      marks: 60,
-      status: 'Approved',
-      issueCount: 0,
-      note: 'Approved and ready for exam officer packaging.',
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  String _selectedStatus = 'all';
+  int? _busyExamId;
+  List<ExamWorkflowItem> _items = const [];
 
-  static const _comments = [
-    _ModerationComment(
-      courseCode: 'CSC 309',
-      author: 'Moderator',
-      message:
-          'Question 14 has two defensible answers. Please revise option B or provide stronger key justification.',
-      severity: 'High',
-      time: 'Today, 11:22',
-    ),
-    _ModerationComment(
-      courseCode: 'SEN 301',
-      author: 'Moderator',
-      message:
-          'Practical rubric should separate requirement clarity, modelling accuracy, and feasibility analysis.',
-      severity: 'Medium',
-      time: 'Today, 09:18',
-    ),
-    _ModerationComment(
-      courseCode: 'CSC 305',
-      author: 'Moderator',
-      message:
-          'Coverage is balanced across stacks, queues, trees, graphs, and algorithm complexity.',
-      severity: 'Low',
-      time: 'Yesterday, 15:41',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _api.close();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final items = await _api.fetchExams();
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  List<ExamWorkflowItem> get _visibleItems {
+    final relevant = _items.where((item) {
+      return item.status == 'officer_review' ||
+          item.status == 'moderator_review' ||
+          item.status == 'moderated' ||
+          item.status == 'lecturer_correction' ||
+          item.status == 'scheduled';
+    }).toList();
+
+    if (_selectedStatus == 'all') return relevant;
+    return relevant.where((item) => item.status == _selectedStatus).toList();
+  }
+
+  int _count(String status) =>
+      _items.where((item) => item.status == status).length;
+
+  Future<String?> _noteDialog({required String title, required String hint}) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          minLines: 3,
+          maxLines: 6,
+          decoration: InputDecoration(
+            labelText: 'Review note',
+            hintText: hint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
+  Future<void> _runAction(
+    ExamWorkflowItem item,
+    Future<ExamWorkflowItem> Function(String note) action, {
+    required String title,
+    required String hint,
+  }) async {
+    final note = await _noteDialog(title: title, hint: hint);
+    if (note == null) return;
+
+    setState(() => _busyExamId = item.id);
+    try {
+      await action(note);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Question paper updated successfully.')),
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _busyExamId = null);
+    }
+  }
+
+  void _openPaper(ExamWorkflowItem item) {
+    final questions = _collectQuestions(item.questionPayload);
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: Text(item.title),
+          content: SizedBox(
+            width: 760,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _MiniPill(label: item.courseLabel),
+                      _MiniPill(label: item.statusLabel),
+                      _MiniPill(label: '${item.questionCount} questions'),
+                      _MiniPill(label: '${_totalMarks(questions)} marks'),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (questions.isEmpty)
+                    Text(
+                      'No questions found in this paper.',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    )
+                  else
+                    for (var i = 0; i < questions.length; i++)
+                      _QuestionPreviewCard(
+                        number: i + 1,
+                        question: questions[i],
+                      ),
+                  if (item.workflowNotes.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Review history',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final note in item.workflowNotes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          '${note.actionLabel}: ${note.comment.isEmpty ? 'No note added' : note.comment}',
+                          style: TextStyle(color: scheme.onSurfaceVariant),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static List<Map<String, dynamic>> _collectQuestions(
+    Map<String, dynamic> payload,
+  ) {
+    final out = <Map<String, dynamic>>[];
+
+    final questions = payload['questions'];
+    if (questions is List) {
+      out.addAll(
+        questions.whereType<Map>().map((raw) {
+          return raw.map((key, value) => MapEntry(key.toString(), value));
+        }),
+      );
+    }
+
+    final sections = payload['sections'];
+    if (sections is List) {
+      for (final section in sections.whereType<Map>()) {
+        final items = section['questions'];
+        if (items is List) {
+          out.addAll(
+            items.whereType<Map>().map((raw) {
+              return raw.map((key, value) => MapEntry(key.toString(), value));
+            }),
+          );
+        }
+      }
+    }
+
+    return out;
+  }
+
+  static int _totalMarks(List<Map<String, dynamic>> questions) {
+    return questions.fold<int>(
+      0,
+      (sum, item) => sum + (int.tryParse(item['marks']?.toString() ?? '') ?? 0),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final filtered = _questionSets
-        .where(
-          (set) => _selectedStatus == 'All' || set.status == _selectedStatus,
-        )
-        .where(
-          (set) => _selectedFormat == 'All' || set.format == _selectedFormat,
-        )
-        .toList();
+    final visible = _visibleItems;
 
     return Card(
       child: Padding(
@@ -106,141 +246,125 @@ class _ModeratorQuestionReviewPanelState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              spacing: 14,
+              runSpacing: 12,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Icon(Icons.rule_folder_outlined, color: scheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Moderator / Question Review',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.rate_review_outlined,
+                            color: scheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Moderator Question Review',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Review question papers sent by Exam Officers, add notes, and return them for scheduling or correction.',
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.verified_outlined),
-                  label: const Text('Approve selected'),
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _load,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh'),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: const [
-                _ReviewChip(
-                  label: 'Submitted sets: 14',
-                  icon: Icons.inventory_2_outlined,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _StatusFilterChip(
+                  label: 'All ${_visibleItems.length}',
+                  selected: _selectedStatus == 'all',
+                  onTap: () => setState(() => _selectedStatus = 'all'),
                 ),
-                _ReviewChip(
-                  label: 'Needs review: 5',
-                  icon: Icons.manage_search_outlined,
+                _StatusFilterChip(
+                  label: 'With Moderator ${_count('moderator_review')}',
+                  selected: _selectedStatus == 'moderator_review',
+                  onTap: () =>
+                      setState(() => _selectedStatus = 'moderator_review'),
                 ),
-                _ReviewChip(
-                  label: 'Returned: 3',
-                  icon: Icons.keyboard_return_outlined,
+                _StatusFilterChip(
+                  label: 'Exam Officer Review ${_count('officer_review')}',
+                  selected: _selectedStatus == 'officer_review',
+                  onTap: () =>
+                      setState(() => _selectedStatus = 'officer_review'),
                 ),
-                _ReviewChip(
-                  label: 'Approved: 28',
-                  icon: Icons.verified_outlined,
+                _StatusFilterChip(
+                  label: 'Returned ${_count('moderated')}',
+                  selected: _selectedStatus == 'moderated',
+                  onTap: () => setState(() => _selectedStatus = 'moderated'),
+                ),
+                _StatusFilterChip(
+                  label: 'Correction ${_count('lecturer_correction')}',
+                  selected: _selectedStatus == 'lecturer_correction',
+                  onTap: () =>
+                      setState(() => _selectedStatus = 'lecturer_correction'),
+                ),
+                _StatusFilterChip(
+                  label: 'Scheduled ${_count('scheduled')}',
+                  selected: _selectedStatus == 'scheduled',
+                  onTap: () => setState(() => _selectedStatus = 'scheduled'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                SizedBox(
-                  width: 230,
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _selectedStatus,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'All',
-                        child: Text('All statuses'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Needs Review',
-                        child: Text('Needs Review'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Return to Lecturer',
-                        child: Text('Return to Lecturer'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Ready to Approve',
-                        child: Text('Ready to Approve'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Approved',
-                        child: Text('Approved'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedStatus = value ?? 'All'),
-                    decoration: const InputDecoration(
-                      labelText: 'Review status',
-                    ),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_error != null)
+              _ErrorBox(message: _error!, onRetry: _load)
+            else if (visible.isEmpty)
+              const _EmptyBox()
+            else
+              for (final item in visible)
+                _LiveQuestionPaperTile(
+                  item: item,
+                  busy: _busyExamId == item.id,
+                  onOpen: () => _openPaper(item),
+                  onSendToModerator: () => _runAction(
+                    item,
+                    (note) => _api.sendToModerator(item.id, note),
+                    title: 'Send to Moderator',
+                    hint: 'Add instruction for the moderator.',
+                  ),
+                  onReturnToOfficer: () => _runAction(
+                    item,
+                    (note) => _api.moderatorReturn(item.id, note),
+                    title: 'Return to Exam Officer',
+                    hint: 'Add the moderator review note.',
+                  ),
+                  onSendBackToLecturer: () => _runAction(
+                    item,
+                    (note) => _api.sendBackToLecturer(item.id, note),
+                    title: 'Send Back to Lecturer',
+                    hint: 'Explain the correction needed.',
                   ),
                 ),
-                SizedBox(
-                  width: 240,
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _selectedFormat,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'All',
-                        child: Text('All formats'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Objective',
-                        child: Text('Objective'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Essay + Objective',
-                        child: Text('Essay + Objective'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Mixed CBT',
-                        child: Text('Mixed CBT'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Practical + Whiteboard',
-                        child: Text('Practical + Whiteboard'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedFormat = value ?? 'All'),
-                    decoration: const InputDecoration(
-                      labelText: 'Question format',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Question sets',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            for (final set in filtered) _QuestionSetTile(set: set),
-            const SizedBox(height: 18),
-            Text(
-              'Moderation comments',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            for (final comment in _comments) _CommentTile(comment: comment),
           ],
         ),
       ),
@@ -248,30 +372,37 @@ class _ModeratorQuestionReviewPanelState
   }
 }
 
-class _QuestionSetTile extends StatelessWidget {
-  const _QuestionSetTile({required this.set});
+class _LiveQuestionPaperTile extends StatelessWidget {
+  const _LiveQuestionPaperTile({
+    required this.item,
+    required this.busy,
+    required this.onOpen,
+    required this.onSendToModerator,
+    required this.onReturnToOfficer,
+    required this.onSendBackToLecturer,
+  });
 
-  final _QuestionSet set;
+  final ExamWorkflowItem item;
+  final bool busy;
+  final VoidCallback onOpen;
+  final VoidCallback onSendToModerator;
+  final VoidCallback onReturnToOfficer;
+  final VoidCallback onSendBackToLecturer;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = set.status == 'Return to Lecturer'
-        ? scheme.error
-        : set.status == 'Approved' || set.status == 'Ready to Approve'
-        ? scheme.primary
-        : scheme.secondary;
+    final statusColor = _statusColor(scheme, item.status);
+    final lastNote = item.workflowNotes.isEmpty
+        ? null
+        : item.workflowNotes.last;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: set.issueCount > 0
-              ? scheme.error.withValues(alpha: 0.4)
-              : scheme.outlineVariant,
-        ),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,25 +411,28 @@ class _QuestionSetTile extends StatelessWidget {
             spacing: 12,
             runSpacing: 8,
             alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
+                constraints: const BoxConstraints(maxWidth: 680),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${set.courseCode} • ${set.title}',
+                      '${item.courseLabel} • ${item.title}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${set.lecturer} • ${set.format}',
+                      '${item.deliveryLabel} • ${item.scheduleLabel}',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
-              _StatusBadge(text: set.status, color: statusColor),
+              _StatusBadge(text: item.statusLabel, color: statusColor),
             ],
           ),
           const SizedBox(height: 10),
@@ -306,87 +440,150 @@ class _QuestionSetTile extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _MiniPill(label: '${set.questions} questions'),
-              _MiniPill(label: '${set.marks} marks'),
-              _MiniPill(label: '${set.issueCount} issues'),
-              _MiniPill(label: 'Rubric check'),
+              _MiniPill(label: '${item.questionCount} questions'),
+              for (final type in item.questionTypes)
+                _MiniPill(label: _label(type)),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(set.note, style: TextStyle(color: scheme.onSurfaceVariant)),
+          if (lastNote != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              '${lastNote.actionLabel}: ${lastNote.comment.isEmpty ? 'No note added' : lastNote.comment}',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: 12),
+          if (busy)
+            const LinearProgressIndicator()
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onOpen,
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: const Text('Open paper'),
+                ),
+                if (item.status == 'officer_review')
+                  FilledButton.icon(
+                    onPressed: onSendToModerator,
+                    icon: const Icon(Icons.forward_to_inbox_outlined),
+                    label: const Text('Send to Moderator'),
+                  ),
+                if (item.status == 'moderator_review')
+                  FilledButton.icon(
+                    onPressed: onReturnToOfficer,
+                    icon: const Icon(Icons.assignment_return_outlined),
+                    label: const Text('Return to Exam Officer'),
+                  ),
+                if (item.status == 'moderated' ||
+                    item.status == 'officer_review')
+                  OutlinedButton.icon(
+                    onPressed: onSendBackToLecturer,
+                    icon: const Icon(Icons.reply_all_outlined),
+                    label: const Text('Send Back to Lecturer'),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _statusColor(ColorScheme scheme, String status) {
+    switch (status) {
+      case 'moderator_review':
+        return scheme.secondary;
+      case 'moderated':
+      case 'scheduled':
+        return scheme.primary;
+      case 'lecturer_correction':
+        return scheme.error;
+      default:
+        return scheme.tertiary;
+    }
+  }
+}
+
+class _QuestionPreviewCard extends StatelessWidget {
+  const _QuestionPreviewCard({required this.number, required this.question});
+
+  final int number;
+  final Map<String, dynamic> question;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final type = (question['type'] ?? question['question_type'] ?? '')
+        .toString();
+    final prompt = (question['prompt'] ?? question['question_text'] ?? '')
+        .toString();
+    final marks = question['marks']?.toString() ?? '0';
+    final guide =
+        (question['marking_guide'] ??
+                question['correct_answer'] ??
+                question['correct_answers'] ??
+                '')
+            .toString();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.visibility_outlined),
-                label: const Text('Review questions'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.comment_outlined),
-                label: const Text('Add comment'),
-              ),
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.keyboard_return_outlined),
-                label: const Text('Return'),
-              ),
-              FilledButton.icon(
-                onPressed: set.status == 'Return to Lecturer' ? null : () {},
-                icon: const Icon(Icons.verified_outlined),
-                label: const Text('Approve'),
-              ),
+              _MiniPill(label: 'Question $number'),
+              _MiniPill(label: _label(type)),
+              _MiniPill(label: '$marks marks'),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            prompt.isEmpty ? 'No question text provided.' : prompt,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          if (guide.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Guide: $guide',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment});
-
-  final _ModerationComment comment;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final severityColor = comment.severity == 'High'
-        ? scheme.error
-        : comment.severity == 'Medium'
-        ? scheme.secondary
-        : scheme.primary;
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: severityColor.withValues(alpha: 0.12),
-        foregroundColor: severityColor,
-        child: const Icon(Icons.rate_review_outlined),
-      ),
-      title: Text(
-        '${comment.courseCode} • ${comment.message}',
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text('${comment.author} • ${comment.time}'),
-      trailing: _StatusBadge(text: comment.severity, color: severityColor),
-    );
-  }
-}
-
-class _ReviewChip extends StatelessWidget {
-  const _ReviewChip({required this.label, required this.icon});
+class _StatusFilterChip extends StatelessWidget {
+  const _StatusFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
-  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Chip(avatar: Icon(icon, size: 18), label: Text(label));
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+    );
   }
 }
 
@@ -435,42 +632,59 @@ class _MiniPill extends StatelessWidget {
   }
 }
 
-class _QuestionSet {
-  const _QuestionSet({
-    required this.courseCode,
-    required this.title,
-    required this.lecturer,
-    required this.format,
-    required this.questions,
-    required this.marks,
-    required this.status,
-    required this.issueCount,
-    required this.note,
-  });
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.message, required this.onRetry});
 
-  final String courseCode;
-  final String title;
-  final String lecturer;
-  final String format;
-  final int questions;
-  final int marks;
-  final String status;
-  final int issueCount;
-  final String note;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Could not load question papers',
+            style: TextStyle(
+              color: scheme.onErrorContainer,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(message, style: TextStyle(color: scheme.onErrorContainer)),
+          const SizedBox(height: 10),
+          FilledButton(onPressed: onRetry, child: const Text('Try again')),
+        ],
+      ),
+    );
+  }
 }
 
-class _ModerationComment {
-  const _ModerationComment({
-    required this.courseCode,
-    required this.author,
-    required this.message,
-    required this.severity,
-    required this.time,
-  });
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox();
 
-  final String courseCode;
-  final String author;
-  final String message;
-  final String severity;
-  final String time;
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(24),
+      child: Center(child: Text('No question papers found for this view.')),
+    );
+  }
+}
+
+String _label(String value) {
+  return value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0].toUpperCase() + part.substring(1))
+      .join(' ');
 }

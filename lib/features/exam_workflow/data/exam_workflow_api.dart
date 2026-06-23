@@ -36,7 +36,10 @@ class ExamWorkflowApi {
   }
 
   Future<ExamWorkflowItem> releaseExam(int examId, String comment) async {
-    final data = await _client.post('/api/exams/$examId/release', body: {'comment': comment});
+    final data = await _client.post(
+      '/api/exams/$examId/release',
+      body: {'comment': comment},
+    );
     return ExamWorkflowItem.fromJson(_asStringMap(data));
   }
 
@@ -63,7 +66,11 @@ class ExamWorkflowApi {
     return ExamWorkflowItem.fromJson(_asStringMap(data));
   }
 
-  Future<ExamWorkflowItem> _postAction(int examId, String action, String comment) async {
+  Future<ExamWorkflowItem> _postAction(
+    int examId,
+    String action,
+    String comment,
+  ) async {
     final data = await _client.post(
       '/api/exams/$examId/$action',
       body: {'comment': comment},
@@ -96,6 +103,7 @@ class ExamWorkflowItem {
     required this.questionCount,
     required this.questionTypes,
     required this.workflowNotes,
+    this.questionPayload = const {},
   });
 
   final int id;
@@ -111,21 +119,28 @@ class ExamWorkflowItem {
   final int questionCount;
   final List<String> questionTypes;
   final List<ExamWorkflowNote> workflowNotes;
+  final Map<String, dynamic> questionPayload;
 
   factory ExamWorkflowItem.fromJson(Map<String, dynamic> json) {
     final questionPayload = _map(json['question_payload']);
     final questions = _collectQuestions(questionPayload);
-    final types = questions
-        .map((item) => item['type']?.toString() ?? '')
-        .where((item) => item.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final types =
+        questions
+            .map(
+              (item) =>
+                  (item['type'] ?? item['question_type'])?.toString() ?? '',
+            )
+            .where((item) => item.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
 
     final rawNotes = questionPayload['workflow_notes'];
     final notes = rawNotes is List
         ? rawNotes.whereType<Map>().map((raw) {
-            return ExamWorkflowNote.fromJson(raw.map((key, value) => MapEntry(key.toString(), value)));
+            return ExamWorkflowNote.fromJson(
+              raw.map((key, value) => MapEntry(key.toString(), value)),
+            );
           }).toList()
         : <ExamWorkflowNote>[];
 
@@ -138,27 +153,34 @@ class ExamWorkflowItem {
       deliveryMode: json['delivery_mode']?.toString() ?? '',
       startTime: DateTime.tryParse(json['start_time']?.toString() ?? ''),
       endTime: DateTime.tryParse(json['end_time']?.toString() ?? ''),
-      durationMinutes: int.tryParse(json['duration_minutes']?.toString() ?? '') ?? 0,
+      durationMinutes:
+          int.tryParse(json['duration_minutes']?.toString() ?? '') ?? 0,
       venue: json['venue']?.toString() ?? '',
       questionCount: questions.length,
       questionTypes: types,
       workflowNotes: notes,
+      questionPayload: questionPayload,
     );
   }
 
   static Map<String, dynamic> _map(dynamic value) {
-    if (value is Map) return value.map((key, item) => MapEntry(key.toString(), item));
+    if (value is Map)
+      return value.map((key, item) => MapEntry(key.toString(), item));
     return const {};
   }
 
-  static List<Map<String, dynamic>> _collectQuestions(Map<String, dynamic> payload) {
+  static List<Map<String, dynamic>> _collectQuestions(
+    Map<String, dynamic> payload,
+  ) {
     final out = <Map<String, dynamic>>[];
 
     final questions = payload['questions'];
     if (questions is List) {
-      out.addAll(questions.whereType<Map>().map((raw) {
-        return raw.map((key, value) => MapEntry(key.toString(), value));
-      }));
+      out.addAll(
+        questions.whereType<Map>().map((raw) {
+          return raw.map((key, value) => MapEntry(key.toString(), value));
+        }),
+      );
     }
 
     final sections = payload['sections'];
@@ -166,9 +188,11 @@ class ExamWorkflowItem {
       for (final section in sections.whereType<Map>()) {
         final items = section['questions'];
         if (items is List) {
-          out.addAll(items.whereType<Map>().map((raw) {
-            return raw.map((key, value) => MapEntry(key.toString(), value));
-          }));
+          out.addAll(
+            items.whereType<Map>().map((raw) {
+              return raw.map((key, value) => MapEntry(key.toString(), value));
+            }),
+          );
         }
       }
     }
@@ -178,7 +202,8 @@ class ExamWorkflowItem {
 
   String get statusLabel => _humanStatus(status);
   String get deliveryLabel => _humanStatus(deliveryMode);
-  String get courseLabel => [courseCode, courseTitle].where((e) => e.trim().isNotEmpty).join(' • ');
+  String get courseLabel =>
+      [courseCode, courseTitle].where((e) => e.trim().isNotEmpty).join(' • ');
 
   String get scheduleLabel {
     if (startTime == null) return 'Not scheduled';
