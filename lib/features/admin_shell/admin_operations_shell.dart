@@ -283,7 +283,9 @@ IconData _workspaceIconForRole(AdminRole role) {
 }
 
 class AdminOperationsShell extends StatefulWidget {
-  const AdminOperationsShell({super.key});
+  const AdminOperationsShell({super.key, this.initialRole});
+
+  final AdminRole? initialRole;
 
   @override
   State<AdminOperationsShell> createState() => _AdminOperationsShellState();
@@ -291,8 +293,14 @@ class AdminOperationsShell extends StatefulWidget {
 
 class _AdminOperationsShellState extends State<AdminOperationsShell> {
   final MockAdminRepository _repository = const MockAdminRepository();
-  AdminRole _selectedRole = AdminRole.dlcDirector;
+  late AdminRole _selectedRole;
   int _selectedPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRole = widget.initialRole ?? AdminRole.dlcDirector;
+  }
 
   @override
   Widget build(BuildContext context) {

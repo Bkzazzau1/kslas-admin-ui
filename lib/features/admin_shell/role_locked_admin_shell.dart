@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/auth/auth_session.dart';
+import '../../models/admin_role.dart';
 import '../lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../live_dashboard/widgets/live_dashboard_panel.dart';
 import '../live_dashboard/widgets/notification_bell.dart';
@@ -204,6 +205,11 @@ List<_LockedPage> _lecturerPages(
   ValueChanged<String> onOpenPage,
 ) => [
   _LockedPage(
+    'Full console',
+    Icons.dashboard_customize_outlined,
+    (_) => const AdminOperationsShell(initialRole: AdminRole.lecturer),
+  ),
+  _LockedPage(
     'Command center',
     Icons.space_dashboard_outlined,
     (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
@@ -212,21 +218,6 @@ List<_LockedPage> _lecturerPages(
     'My role',
     Icons.school_outlined,
     (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Smart forms',
-    Icons.dynamic_form_outlined,
-    (_) => const _PanelHost(child: WorkflowFormsPanel()),
-  ),
-  _LockedPage(
-    'Live workflow',
-    Icons.account_tree_outlined,
-    (_) => const _PanelHost(child: WorkflowLivePanel()),
-  ),
-  _LockedPage(
-    'Live questions',
-    Icons.cloud_done_outlined,
-    (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
   ),
   _LockedPage(
     'Live dashboard',
