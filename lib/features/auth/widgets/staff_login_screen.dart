@@ -42,7 +42,10 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
       _error = null;
     });
     try {
-      final result = await _api.login(email: _emailController.text, password: _passwordController.text);
+      final result = await _api.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
       await AuthSession.instance.saveLogin(result);
     } on ApiException catch (error) {
       setState(() => _error = error.message);
@@ -64,9 +67,7 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                Expanded(
-                  child: _BrandPanel(scheme: scheme),
-                ),
+                Expanded(child: _BrandPanel(scheme: scheme)),
                 const SizedBox(width: 24),
                 Expanded(
                   child: Card(
@@ -78,16 +79,30 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Staff sign in', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                            Text(
+                              'Staff sign in',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.w900),
+                            ),
                             const SizedBox(height: 8),
-                            Text('Use your K-SLAS staff account to continue.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                            Text(
+                              'Use your K-SLAS staff account to continue.',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
                             const SizedBox(height: 20),
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               autofillHints: const [AutofillHints.email],
-                              decoration: const InputDecoration(labelText: 'Email address', prefixIcon: Icon(Icons.mail_outline)),
-                              validator: (value) => value == null || value.trim().isEmpty ? 'Email is required' : null,
+                              decoration: const InputDecoration(
+                                labelText: 'Email address',
+                                prefixIcon: Icon(Icons.mail_outline),
+                              ),
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'Email is required'
+                                  : null,
                               onFieldSubmitted: (_) => _login(),
                             ),
                             const SizedBox(height: 14),
@@ -99,11 +114,20 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
-                                  onPressed: () => setState(() => _hidePassword = !_hidePassword),
-                                  icon: Icon(_hidePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                                  onPressed: () => setState(
+                                    () => _hidePassword = !_hidePassword,
+                                  ),
+                                  icon: Icon(
+                                    _hidePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
                                 ),
                               ),
-                              validator: (value) => value == null || value.isEmpty ? 'Password is required' : null,
+                              validator: (value) =>
+                                  value == null || value.isEmpty
+                                  ? 'Password is required'
+                                  : null,
                               onFieldSubmitted: (_) => _login(),
                             ),
                             if (_error != null) ...[
@@ -115,7 +139,12 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                                   color: scheme.errorContainer,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: scheme.onErrorContainer,
+                                  ),
+                                ),
                               ),
                             ],
                             const SizedBox(height: 22),
@@ -123,12 +152,26 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                               width: double.infinity,
                               child: FilledButton.icon(
                                 onPressed: _isLoading ? null : _login,
-                                icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.login_outlined),
-                                label: Text(_isLoading ? 'Signing in...' : 'Sign in'),
+                                icon: _isLoading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.login_outlined),
+                                label: Text(
+                                  _isLoading ? 'Signing in...' : 'Sign in',
+                                ),
                               ),
                             ),
                             const SizedBox(height: 14),
-                            Text('Backend: ${ApiConfig.baseUrl}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                            Text(
+                              'Backend: ${ApiConfig.baseUrl}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
                           ],
                         ),
                       ),
@@ -174,12 +217,18 @@ class _BrandPanel extends StatelessWidget {
           const SizedBox(height: 28),
           Text(
             'K-SLAS Administration',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w900),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: scheme.onPrimary,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
             'Manage lecturers, questions, assessments, CA, marked scripts, and live work alerts from one secure console.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: scheme.onPrimary.withOpacity(0.88), height: 1.45),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: scheme.onPrimary.withValues(alpha: 0.88),
+              height: 1.45,
+            ),
           ),
           const SizedBox(height: 26),
           Wrap(

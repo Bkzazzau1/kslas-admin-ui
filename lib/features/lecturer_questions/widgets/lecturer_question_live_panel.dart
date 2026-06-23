@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_session.dart';
@@ -23,12 +24,20 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
   );
   final _durationController = TextEditingController(text: '120');
   final _examOfficerController = TextEditingController(text: '4');
+  final _objectiveCountController = TextEditingController(text: '20');
+  final _marksPerQuestionController = TextEditingController(text: '1');
 
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingObjectives = false;
+  bool _uploadingAnswerScript = false;
   bool _autoMarkObjective = true;
   String? _error;
   String? _notice;
+  String _objectiveUploadName = '';
+  String _objectiveUploadUrl = '';
+  String _answerScriptName = '';
+  String _answerScriptUrl = '';
 
   int? _selectedCourseId;
   String _selectedType = 'objective';
@@ -43,6 +52,10 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
       marks: '2',
       prompt: 'Which data structure follows last-in-first-out order?',
       answer: 'Stack',
+      optionA: 'Queue',
+      optionB: 'Stack',
+      optionC: 'Array',
+      optionD: 'Tree',
     ),
     _QuestionDraft(
       id: 'q2',
@@ -70,6 +83,8 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
     _instructionsController.dispose();
     _durationController.dispose();
     _examOfficerController.dispose();
+    _objectiveCountController.dispose();
+    _marksPerQuestionController.dispose();
     super.dispose();
   }
 
@@ -187,6 +202,14 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
         'file_upload',
       ],
       'total_marks': _totalMarks,
+      'objective_upload': {
+        if (_objectiveUploadName.isNotEmpty) 'file_name': _objectiveUploadName,
+        if (_objectiveUploadUrl.isNotEmpty) 'file_url': _objectiveUploadUrl,
+      },
+      'answer_script': {
+        if (_answerScriptName.isNotEmpty) 'file_name': _answerScriptName,
+        if (_answerScriptUrl.isNotEmpty) 'file_url': _answerScriptUrl,
+      },
       'questions': [
         for (var i = 0; i < _questions.length; i++)
           _questions[i].toPayload(i + 1),
@@ -206,12 +229,123 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
           id: 'q${_questions.length + 1}',
           type: _selectedType,
           topic: 'Course learning outcome',
-          marks: '10',
+          marks: _marksPerQuestionController.text.trim().isEmpty
+              ? '1'
+              : _marksPerQuestionController.text.trim(),
           prompt: '',
           answer: '',
         ),
       );
     });
+  }
+
+  void _addObjectiveQuestion() {
+    setState(() {
+      _selectedType = 'objective';
+      _questions.add(
+        _QuestionDraft(
+          id: 'q${_questions.length + 1}',
+          type: 'objective',
+          topic: 'Course learning outcome',
+          marks: _marksPerQuestionController.text.trim().isEmpty
+              ? '1'
+              : _marksPerQuestionController.text.trim(),
+          prompt: '',
+          answer: '',
+        ),
+      );
+    });
+  }
+
+  void _addObjectiveBatch() {
+    final count = int.tryParse(_objectiveCountController.text.trim()) ?? 0;
+    final marks = int.tryParse(_marksPerQuestionController.text.trim()) ?? 0;
+
+    if (count <= 0) {
+      _showError('Enter the number of objective questions to create.');
+      return;
+    }
+    if (marks <= 0) {
+      _showError('Enter marks for each objective question.');
+      return;
+    }
+
+    setState(() {
+      _selectedType = 'objective';
+      for (var i = 0; i < count; i++) {
+        _questions.add(
+          _QuestionDraft(
+            id: 'q${_questions.length + 1}',
+            type: 'objective',
+            topic: 'Course learning outcome',
+            marks: '$marks',
+            prompt: '',
+            answer: '',
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _pickAndUploadObjectives() async {
+    await _pickAndUploadQuestionFile(
+      category: 'objective_questions',
+      uploadingSetter: (value) => _uploadingObjectives = value,
+      onUploaded: (name, url) {
+        _objectiveUploadName = name;
+        _objectiveUploadUrl = url;
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadAnswerScript() async {
+    await _pickAndUploadQuestionFile(
+      category: 'answer_script',
+      uploadingSetter: (value) => _uploadingAnswerScript = value,
+      onUploaded: (name, url) {
+        _answerScriptName = name;
+        _answerScriptUrl = url;
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadQuestionFile({
+    required String category,
+    required ValueChanged<bool> uploadingSetter,
+    required void Function(String fileName, String fileUrl) onUploaded,
+  }) async {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['csv', 'xlsx', 'docx', 'pdf'],
+      withData: true,
+    );
+    if (picked == null || picked.files.isEmpty) return;
+
+    final file = picked.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      _showError('Could not read selected file.');
+      return;
+    }
+
+    setState(() => uploadingSetter(true));
+    try {
+      final url = await _api.uploadFile(
+        bytes: bytes,
+        fileName: file.name,
+        category: category,
+      );
+      if (!mounted) return;
+      setState(() {
+        uploadingSetter(false);
+        onUploaded(file.name, url);
+        _notice = '${file.name} uploaded.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => uploadingSetter(false));
+      _showError(error.toString());
+    }
   }
 
   void _removeQuestion(_QuestionDraft item) {
@@ -319,12 +453,22 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
                     selectedType: _selectedType,
                     totalMarks: _totalMarks,
                     questionCount: _questions.length,
+                    objectiveCountController: _objectiveCountController,
+                    marksPerQuestionController: _marksPerQuestionController,
+                    objectiveUploadName: _objectiveUploadName,
+                    answerScriptName: _answerScriptName,
+                    uploadingObjectives: _uploadingObjectives,
+                    uploadingAnswerScript: _uploadingAnswerScript,
                     autoMarkObjective: _autoMarkObjective,
                     onTypeChanged: (value) =>
                         setState(() => _selectedType = value),
                     onAutoMarkChanged: (value) =>
                         setState(() => _autoMarkObjective = value),
                     onAddQuestion: _addQuestion,
+                    onAddObjective: _addObjectiveQuestion,
+                    onAddObjectiveBatch: _addObjectiveBatch,
+                    onUploadObjectives: _pickAndUploadObjectives,
+                    onUploadAnswerScript: _pickAndUploadAnswerScript,
                   ),
                   const SizedBox(height: 12),
                   for (var i = 0; i < _questions.length; i++) ...[
@@ -381,7 +525,7 @@ class _PaperDetails extends StatelessWidget {
                 width: 320,
                 child: DropdownButtonFormField<int>(
                   isExpanded: true,
-                  value: selectedCourseId,
+                  initialValue: selectedCourseId,
                   items: [
                     for (final course in courses)
                       DropdownMenuItem(
@@ -454,19 +598,39 @@ class _QuestionTypeBar extends StatelessWidget {
     required this.selectedType,
     required this.totalMarks,
     required this.questionCount,
+    required this.objectiveCountController,
+    required this.marksPerQuestionController,
+    required this.objectiveUploadName,
+    required this.answerScriptName,
+    required this.uploadingObjectives,
+    required this.uploadingAnswerScript,
     required this.autoMarkObjective,
     required this.onTypeChanged,
     required this.onAutoMarkChanged,
     required this.onAddQuestion,
+    required this.onAddObjective,
+    required this.onAddObjectiveBatch,
+    required this.onUploadObjectives,
+    required this.onUploadAnswerScript,
   });
 
   final String selectedType;
   final int totalMarks;
   final int questionCount;
+  final TextEditingController objectiveCountController;
+  final TextEditingController marksPerQuestionController;
+  final String objectiveUploadName;
+  final String answerScriptName;
+  final bool uploadingObjectives;
+  final bool uploadingAnswerScript;
   final bool autoMarkObjective;
   final ValueChanged<String> onTypeChanged;
   final ValueChanged<bool> onAutoMarkChanged;
   final VoidCallback onAddQuestion;
+  final VoidCallback onAddObjective;
+  final VoidCallback onAddObjectiveBatch;
+  final VoidCallback onUploadObjectives;
+  final VoidCallback onUploadAnswerScript;
 
   @override
   Widget build(BuildContext context) {
@@ -479,12 +643,34 @@ class _QuestionTypeBar extends StatelessWidget {
           Wrap(
             spacing: 10,
             runSpacing: 10,
+            children: [
+              _MetricTile(
+                label: 'Questions',
+                value: '$questionCount',
+                icon: Icons.format_list_numbered_outlined,
+              ),
+              _MetricTile(
+                label: 'Total marks',
+                value: '$totalMarks',
+                icon: Icons.scoreboard_outlined,
+              ),
+              _MetricTile(
+                label: 'Objective mode',
+                value: autoMarkObjective ? 'Auto mark' : 'Manual',
+                icon: Icons.fact_check_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   items: const [
                     DropdownMenuItem(
                       value: 'objective',
@@ -517,15 +703,75 @@ class _QuestionTypeBar extends StatelessWidget {
                   ),
                 ),
               ),
-              _MiniPill(label: '$questionCount questions'),
-              _MiniPill(label: '$totalMarks marks'),
               OutlinedButton.icon(
                 onPressed: onAddQuestion,
                 icon: const Icon(Icons.add_outlined),
                 label: const Text('Add question'),
               ),
+              FilledButton.icon(
+                onPressed: onAddObjective,
+                icon: const Icon(Icons.add_task_outlined),
+                label: const Text('Add objective'),
+              ),
             ],
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: 190,
+                child: TextField(
+                  controller: objectiveCountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'No. of objectives',
+                    prefixIcon: Icon(Icons.format_list_numbered_outlined),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 180,
+                child: TextField(
+                  controller: marksPerQuestionController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Mark each',
+                    prefixIcon: Icon(Icons.pin_outlined),
+                  ),
+                ),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: onAddObjectiveBatch,
+                icon: const Icon(Icons.playlist_add_outlined),
+                label: const Text('Create objective set'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _UploadAction(
+                title: 'Upload objective questions',
+                fileName: objectiveUploadName,
+                busy: uploadingObjectives,
+                icon: Icons.upload_file_outlined,
+                onPressed: onUploadObjectives,
+              ),
+              _UploadAction(
+                title: 'Upload answer script',
+                fileName: answerScriptName,
+                busy: uploadingAnswerScript,
+                icon: Icons.fact_check_outlined,
+                onPressed: onUploadAnswerScript,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           SwitchListTile(
             value: autoMarkObjective,
             onChanged: onAutoMarkChanged,
@@ -576,7 +822,7 @@ class _QuestionDraftCard extends StatelessWidget {
               SizedBox(
                 width: 230,
                 child: DropdownButtonFormField<String>(
-                  value: item.type,
+                  initialValue: item.type,
                   items: const [
                     DropdownMenuItem(
                       value: 'objective',
@@ -654,6 +900,47 @@ class _QuestionDraftCard extends StatelessWidget {
               prefixIcon: const Icon(Icons.help_outline),
             ),
           ),
+          if (item.type == 'objective') ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _OptionField(
+                  label: 'Option A',
+                  value: item.optionA,
+                  onChanged: (value) {
+                    item.optionA = value;
+                    onChanged();
+                  },
+                ),
+                _OptionField(
+                  label: 'Option B',
+                  value: item.optionB,
+                  onChanged: (value) {
+                    item.optionB = value;
+                    onChanged();
+                  },
+                ),
+                _OptionField(
+                  label: 'Option C',
+                  value: item.optionC,
+                  onChanged: (value) {
+                    item.optionC = value;
+                    onChanged();
+                  },
+                ),
+                _OptionField(
+                  label: 'Option D',
+                  value: item.optionD,
+                  onChanged: (value) {
+                    item.optionD = value;
+                    onChanged();
+                  },
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
           TextFormField(
             initialValue: item.answer,
@@ -700,6 +987,30 @@ class _QuestionDraftCard extends StatelessWidget {
       default:
         return 'Marking guide / expected answer';
     }
+  }
+}
+
+class _OptionField extends StatelessWidget {
+  const _OptionField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 300,
+      child: TextFormField(
+        initialValue: value,
+        onChanged: onChanged,
+        decoration: InputDecoration(labelText: label),
+      ),
+    );
   }
 }
 
@@ -779,6 +1090,115 @@ class _PanelBox extends StatelessWidget {
           const SizedBox(height: 14),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 180,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(icon, color: scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UploadAction extends StatelessWidget {
+  const _UploadAction({
+    required this.title,
+    required this.fileName,
+    required this.busy,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String fileName;
+  final bool busy;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 360,
+      child: OutlinedButton.icon(
+        onPressed: busy ? null : onPressed,
+        icon: busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(icon),
+        label: Align(
+          alignment: Alignment.centerLeft,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title),
+              if (fileName.isNotEmpty)
+                Text(
+                  fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -888,6 +1308,10 @@ class _QuestionDraft {
     required this.marks,
     required this.prompt,
     required this.answer,
+    this.optionA = '',
+    this.optionB = '',
+    this.optionC = '',
+    this.optionD = '',
   });
 
   String id;
@@ -896,6 +1320,10 @@ class _QuestionDraft {
   String marks;
   String prompt;
   String answer;
+  String optionA;
+  String optionB;
+  String optionC;
+  String optionD;
 
   Map<String, dynamic> toPayload(int number) {
     final markValue = int.tryParse(marks.trim()) ?? 0;
@@ -910,6 +1338,14 @@ class _QuestionDraft {
 
     switch (type) {
       case 'objective':
+        payload['options'] = [
+          if (optionA.trim().isNotEmpty) {'key': 'A', 'text': optionA.trim()},
+          if (optionB.trim().isNotEmpty) {'key': 'B', 'text': optionB.trim()},
+          if (optionC.trim().isNotEmpty) {'key': 'C', 'text': optionC.trim()},
+          if (optionD.trim().isNotEmpty) {'key': 'D', 'text': optionD.trim()},
+        ];
+        payload['correct_answer'] = answer;
+        break;
       case 'fill_blank':
         payload['correct_answer'] = answer;
         break;

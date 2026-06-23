@@ -45,19 +45,28 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
     }
   }
 
-  Future<void> _run(Future<void> Function() action, {String successMessage = 'Saved successfully'}) async {
+  Future<void> _run(
+    Future<void> Function() action, {
+    String successMessage = 'Saved successfully',
+  }) async {
     setState(() => _busy = true);
     try {
       await action();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
       _reload();
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -66,23 +75,45 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
   Future<void> _openCreateStaff() async {
     final refs = await _safeReferences();
     if (!mounted) return;
-    final payload = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => _CreateStaffDialog(references: refs));
+    final payload = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _CreateStaffDialog(references: refs),
+    );
     if (payload == null) return;
-    await _run(() => _api.createStaff(payload), successMessage: 'Staff account created');
+    await _run(
+      () => _api.createStaff(payload),
+      successMessage: 'Staff account created',
+    );
   }
 
   Future<void> _openAssignRole(StaffItem staff) async {
     final refs = await _safeReferences();
     if (!mounted) return;
-    final payload = await showDialog<Map<String, String>>(context: context, builder: (_) => _AssignRoleDialog(staff: staff, references: refs));
+    final payload = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => _AssignRoleDialog(staff: staff, references: refs),
+    );
     if (payload == null) return;
-    await _run(() => _api.assignRole(staffId: staff.id, role: payload['role'] ?? 'lecturer', departmentId: payload['department_id'], courseId: payload['course_id']));
+    await _run(
+      () => _api.assignRole(
+        staffId: staff.id,
+        role: payload['role'] ?? 'lecturer',
+        departmentId: payload['department_id'],
+        courseId: payload['course_id'],
+      ),
+    );
   }
 
   Future<void> _openResetPassword(StaffItem staff) async {
-    final password = await showDialog<String>(context: context, builder: (_) => _ResetPasswordDialog(staff: staff));
+    final password = await showDialog<String>(
+      context: context,
+      builder: (_) => _ResetPasswordDialog(staff: staff),
+    );
     if (password == null || password.isEmpty) return;
-    await _run(() => _api.resetPassword(staffId: staff.id, password: password), successMessage: 'Password reset successfully');
+    await _run(
+      () => _api.resetPassword(staffId: staff.id, password: password),
+      successMessage: 'Password reset successfully',
+    );
   }
 
   Future<void> _toggleStaffStatus(StaffItem staff) async {
@@ -91,10 +122,20 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(nextActive ? 'Activate staff' : 'Deactivate staff'),
-        content: Text(nextActive ? 'Allow ${staff.name} to access the system again?' : 'Stop ${staff.name} from accessing the system?'),
+        content: Text(
+          nextActive
+              ? 'Allow ${staff.name} to access the system again?'
+              : 'Stop ${staff.name} from accessing the system?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(nextActive ? 'Activate' : 'Deactivate')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(nextActive ? 'Activate' : 'Deactivate'),
+          ),
         ],
       ),
     );
@@ -125,14 +166,27 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
                   children: [
                     Icon(Icons.badge_outlined, color: scheme.primary),
                     const SizedBox(width: 10),
-                    Text('Staff management', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      'Staff management',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
                 Wrap(
                   spacing: 8,
                   children: [
-                    OutlinedButton.icon(onPressed: _busy ? null : _reload, icon: const Icon(Icons.refresh_outlined), label: const Text('Refresh')),
-                    FilledButton.icon(onPressed: _busy ? null : _openCreateStaff, icon: const Icon(Icons.person_add_alt_outlined), label: const Text('Create staff')),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _reload,
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('Refresh'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: _busy ? null : _openCreateStaff,
+                      icon: const Icon(Icons.person_add_alt_outlined),
+                      label: const Text('Create staff'),
+                    ),
                   ],
                 ),
               ],
@@ -145,7 +199,12 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
                 final text = refs == null
                     ? 'Loading department and course options...'
                     : '${refs.departments.length} departments and ${refs.courses.length} courses loaded for role assignment.';
-                return Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant));
+                return Text(
+                  text,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                );
               },
             ),
             const SizedBox(height: 18),
@@ -153,10 +212,16 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
               future: _future,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Center(child: CircularProgressIndicator()));
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
                 }
                 if (snapshot.hasError) {
-                  return _StaffError(message: snapshot.error.toString(), onRetry: _reload);
+                  return _StaffError(
+                    message: snapshot.error.toString(),
+                    onRetry: _reload,
+                  );
                 }
                 final staff = snapshot.data ?? const [];
                 if (staff.isEmpty) return const _EmptyStaffState();
@@ -193,7 +258,12 @@ class _StaffManagementPanelState extends State<StaffManagementPanel> {
 }
 
 class _StaffTable extends StatelessWidget {
-  const _StaffTable({required this.staff, required this.onAssignRole, required this.onResetPassword, required this.onToggleStatus});
+  const _StaffTable({
+    required this.staff,
+    required this.onAssignRole,
+    required this.onResetPassword,
+    required this.onToggleStatus,
+  });
 
   final List<StaffItem> staff;
   final ValueChanged<StaffItem> onAssignRole;
@@ -218,7 +288,12 @@ class _StaffTable extends StatelessWidget {
 }
 
 class _StaffCard extends StatelessWidget {
-  const _StaffCard({required this.item, required this.onAssignRole, required this.onResetPassword, required this.onToggleStatus});
+  const _StaffCard({
+    required this.item,
+    required this.onAssignRole,
+    required this.onResetPassword,
+    required this.onToggleStatus,
+  });
 
   final StaffItem item;
   final VoidCallback onAssignRole;
@@ -228,8 +303,12 @@ class _StaffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = item.active ? scheme.primaryContainer : scheme.errorContainer;
-    final statusTextColor = item.active ? scheme.onPrimaryContainer : scheme.onErrorContainer;
+    final statusColor = item.active
+        ? scheme.primaryContainer
+        : scheme.errorContainer;
+    final statusTextColor = item.active
+        ? scheme.onPrimaryContainer
+        : scheme.onErrorContainer;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -255,20 +334,36 @@ class _StaffCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      item.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(item.email),
                     const SizedBox(height: 4),
-                    Text(item.staffNumber, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    Text(
+                      item.staffNumber,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Chip(label: Text(item.primaryRole), visualDensity: VisualDensity.compact),
+                    Chip(
+                      label: Text(item.primaryRole),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ],
                 ),
               ),
               Chip(
                 label: Text(item.active ? 'Active' : 'Inactive'),
                 backgroundColor: statusColor,
-                labelStyle: TextStyle(color: statusTextColor, fontWeight: FontWeight.w700),
+                labelStyle: TextStyle(
+                  color: statusTextColor,
+                  fontWeight: FontWeight.w700,
+                ),
                 visualDensity: VisualDensity.compact,
               ),
             ],
@@ -278,9 +373,25 @@ class _StaffCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              FilledButton.icon(onPressed: onResetPassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('Reset password')),
-              OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(item.active ? Icons.block_outlined : Icons.check_circle_outline), label: Text(item.active ? 'Deactivate' : 'Activate')),
-              TextButton.icon(onPressed: onAssignRole, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Assign role')),
+              FilledButton.icon(
+                onPressed: onResetPassword,
+                icon: const Icon(Icons.lock_reset_outlined),
+                label: const Text('Reset password'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onToggleStatus,
+                icon: Icon(
+                  item.active
+                      ? Icons.block_outlined
+                      : Icons.check_circle_outline,
+                ),
+                label: Text(item.active ? 'Deactivate' : 'Activate'),
+              ),
+              TextButton.icon(
+                onPressed: onAssignRole,
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('Assign role'),
+              ),
             ],
           ),
         ],
@@ -333,15 +444,45 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: _staffNumber, decoration: const InputDecoration(labelText: 'Staff number')),
+              TextField(
+                controller: _staffNumber,
+                decoration: const InputDecoration(labelText: 'Staff number'),
+              ),
               const SizedBox(height: 10),
-              Row(children: [Expanded(child: TextField(controller: _title, decoration: const InputDecoration(labelText: 'Title'))), const SizedBox(width: 10), Expanded(child: TextField(controller: _firstName, decoration: const InputDecoration(labelText: 'First name')))]),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _title,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _firstName,
+                      decoration: const InputDecoration(
+                        labelText: 'First name',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _lastName, decoration: const InputDecoration(labelText: 'Last name')),
+              TextField(
+                controller: _lastName,
+                decoration: const InputDecoration(labelText: 'Last name'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email address')),
+              TextField(
+                controller: _email,
+                decoration: const InputDecoration(labelText: 'Email address'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone')),
+              TextField(
+                controller: _phone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
               const SizedBox(height: 10),
               _ReferencePicker(
                 label: 'Department',
@@ -352,20 +493,36 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: _role,
+                initialValue: _role,
                 decoration: const InputDecoration(labelText: 'Primary role'),
-                items: [for (final role in staffRoleOptions) DropdownMenuItem(value: role, child: Text(role))],
-                onChanged: (value) => setState(() => _role = value ?? 'lecturer'),
+                items: [
+                  for (final role in staffRoleOptions)
+                    DropdownMenuItem(value: role, child: Text(role)),
+                ],
+                onChanged: (value) =>
+                    setState(() => _role = value ?? 'lecturer'),
               ),
               const SizedBox(height: 10),
-              TextField(controller: _password, obscureText: true, decoration: const InputDecoration(labelText: 'Temporary password')),
+              TextField(
+                controller: _password,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Temporary password',
+                ),
+              ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(context).pop(_payload()), child: const Text('Create')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_payload()),
+          child: const Text('Create'),
+        ),
       ],
     );
   }
@@ -384,7 +541,9 @@ class _CreateStaffDialogState extends State<_CreateStaffDialog> {
     };
     final departmentId = _departmentId ?? _fallbackDepartmentId.text.trim();
     final numericDepartmentId = int.tryParse(departmentId);
-    if (numericDepartmentId != null) payload['department_id'] = numericDepartmentId;
+    if (numericDepartmentId != null) {
+      payload['department_id'] = numericDepartmentId;
+    }
     return payload;
   }
 }
@@ -424,10 +583,14 @@ class _AssignRoleDialogState extends State<_AssignRoleDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: _role,
+                initialValue: _role,
                 decoration: const InputDecoration(labelText: 'Role'),
-                items: [for (final role in staffRoleOptions) DropdownMenuItem(value: role, child: Text(role))],
-                onChanged: (value) => setState(() => _role = value ?? 'lecturer'),
+                items: [
+                  for (final role in staffRoleOptions)
+                    DropdownMenuItem(value: role, child: Text(role)),
+                ],
+                onChanged: (value) =>
+                    setState(() => _role = value ?? 'lecturer'),
               ),
               const SizedBox(height: 10),
               _ReferencePicker(
@@ -450,8 +613,18 @@ class _AssignRoleDialogState extends State<_AssignRoleDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(context).pop({'role': _role, 'department_id': _departmentId ?? _fallbackDepartmentId.text.trim(), 'course_id': _courseId ?? _fallbackCourseId.text.trim()}), child: const Text('Assign')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop({
+            'role': _role,
+            'department_id': _departmentId ?? _fallbackDepartmentId.text.trim(),
+            'course_id': _courseId ?? _fallbackCourseId.text.trim(),
+          }),
+          child: const Text('Assign'),
+        ),
       ],
     );
   }
@@ -490,21 +663,37 @@ class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
             helperText: 'Give this password to the staff member securely.',
             suffixIcon: IconButton(
               onPressed: () => setState(() => _visible = !_visible),
-              icon: Icon(_visible ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+              icon: Icon(
+                _visible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
             ),
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(context).pop(_password.text), child: const Text('Reset')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_password.text),
+          child: const Text('Reset'),
+        ),
       ],
     );
   }
 }
 
 class _ReferencePicker extends StatelessWidget {
-  const _ReferencePicker({required this.label, required this.options, required this.value, required this.fallbackController, required this.onChanged});
+  const _ReferencePicker({
+    required this.label,
+    required this.options,
+    required this.value,
+    required this.fallbackController,
+    required this.onChanged,
+  });
 
   final String label;
   final List<ReferenceOption> options;
@@ -515,12 +704,21 @@ class _ReferencePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (options.isEmpty) {
-      return TextField(controller: fallbackController, decoration: InputDecoration(labelText: '$label ID'));
+      return TextField(
+        controller: fallbackController,
+        decoration: InputDecoration(labelText: '$label ID'),
+      );
     }
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(labelText: label),
-      items: [for (final option in options) DropdownMenuItem(value: option.id, child: Text(option.label, overflow: TextOverflow.ellipsis))],
+      items: [
+        for (final option in options)
+          DropdownMenuItem(
+            value: option.id,
+            child: Text(option.label, overflow: TextOverflow.ellipsis),
+          ),
+      ],
       onChanged: onChanged,
     );
   }
@@ -534,7 +732,10 @@ class _EmptyStaffState extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: const Text('No staff records returned yet.'),
     );
   }
@@ -551,14 +752,29 @@ class _StaffError extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: Theme.of(context).colorScheme.errorContainer),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Staff management issue', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text(message),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_outlined), label: const Text('Try again')),
-      ]),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Theme.of(context).colorScheme.errorContainer,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Staff management issue',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(message),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_outlined),
+            label: const Text('Try again'),
+          ),
+        ],
+      ),
     );
   }
 }

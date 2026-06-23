@@ -256,7 +256,19 @@ class _DepartmentDialogState extends State<_DepartmentDialog> {
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Create department'),
     content: Column(mainAxisSize: MainAxisSize.min, children: [
-      DropdownButtonFormField<String>(isExpanded: true, value: _facultyId, decoration: const InputDecoration(labelText: 'Faculty'), items: [for (final item in widget.faculties) DropdownMenuItem(value: item.id, child: Text('${item.code} • ${item.name}'))], onChanged: (value) => setState(() => _facultyId = value)),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          initialValue: _facultyId,
+          decoration: const InputDecoration(labelText: 'Faculty'),
+          items: [
+            for (final item in widget.faculties)
+              DropdownMenuItem(
+                value: item.id,
+                child: Text('${item.code} • ${item.name}'),
+              ),
+          ],
+          onChanged: (value) => setState(() => _facultyId = value),
+        ),
       const SizedBox(height: 10),
       TextField(controller: _name, decoration: const InputDecoration(labelText: 'Department name')),
       const SizedBox(height: 10),
@@ -284,13 +296,40 @@ class _ProgrammeDialogState extends State<_ProgrammeDialog> {
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Create programme'),
     content: Column(mainAxisSize: MainAxisSize.min, children: [
-      DropdownButtonFormField<String>(isExpanded: true, value: _departmentId, decoration: const InputDecoration(labelText: 'Department'), items: [for (final item in widget.departments) DropdownMenuItem(value: item.id, child: Text('${item.code} • ${item.name}'))], onChanged: (value) => setState(() => _departmentId = value)),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          initialValue: _departmentId,
+          decoration: const InputDecoration(labelText: 'Department'),
+          items: [
+            for (final item in widget.departments)
+              DropdownMenuItem(
+                value: item.id,
+                child: Text('${item.code} • ${item.name}'),
+              ),
+          ],
+          onChanged: (value) => setState(() => _departmentId = value),
+        ),
       const SizedBox(height: 10),
       TextField(controller: _name, decoration: const InputDecoration(labelText: 'Programme name')),
       const SizedBox(height: 10),
       TextField(controller: _code, decoration: const InputDecoration(labelText: 'Code')),
       const SizedBox(height: 10),
-      DropdownButtonFormField<String>(value: _levelType, decoration: const InputDecoration(labelText: 'Level type'), items: const [DropdownMenuItem(value: 'undergraduate', child: Text('Undergraduate')), DropdownMenuItem(value: 'postgraduate', child: Text('Postgraduate'))], onChanged: (value) => setState(() => _levelType = value ?? 'undergraduate')),
+        DropdownButtonFormField<String>(
+          initialValue: _levelType,
+          decoration: const InputDecoration(labelText: 'Level type'),
+          items: const [
+            DropdownMenuItem(
+              value: 'undergraduate',
+              child: Text('Undergraduate'),
+            ),
+            DropdownMenuItem(
+              value: 'postgraduate',
+              child: Text('Postgraduate'),
+            ),
+          ],
+          onChanged: (value) =>
+              setState(() => _levelType = value ?? 'undergraduate'),
+        ),
     ]),
     actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, {'department_id': int.tryParse(_departmentId ?? ''), 'name': _name.text.trim(), 'code': _code.text.trim(), 'level_type': _levelType}), child: const Text('Create'))],
   );
@@ -318,9 +357,33 @@ class _CourseDialogState extends State<_CourseDialog> {
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Create course'),
     content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      DropdownButtonFormField<String>(isExpanded: true, value: _departmentId, decoration: const InputDecoration(labelText: 'Department'), items: [for (final item in widget.departments) DropdownMenuItem(value: item.id, child: Text('${item.code} • ${item.name}'))], onChanged: (value) => setState(() => _departmentId = value)),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _departmentId,
+              decoration: const InputDecoration(labelText: 'Department'),
+              items: [
+                for (final item in widget.departments)
+                  DropdownMenuItem(
+                    value: item.id,
+                    child: Text('${item.code} • ${item.name}'),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _departmentId = value),
+            ),
       const SizedBox(height: 10),
-      DropdownButtonFormField<String>(isExpanded: true, value: _programmeId, decoration: const InputDecoration(labelText: 'Programme'), items: [for (final item in widget.programmes) DropdownMenuItem(value: item.id, child: Text('${item.code} • ${item.name}'))], onChanged: (value) => setState(() => _programmeId = value)),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _programmeId,
+              decoration: const InputDecoration(labelText: 'Programme'),
+              items: [
+                for (final item in widget.programmes)
+                  DropdownMenuItem(
+                    value: item.id,
+                    child: Text('${item.code} • ${item.name}'),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _programmeId = value),
+            ),
       const SizedBox(height: 10),
       TextField(controller: _title, decoration: const InputDecoration(labelText: 'Course title')),
       const SizedBox(height: 10),
@@ -328,7 +391,22 @@ class _CourseDialogState extends State<_CourseDialog> {
       const SizedBox(height: 10),
       Row(children: [Expanded(child: TextField(controller: _unit, decoration: const InputDecoration(labelText: 'Units'))), const SizedBox(width: 10), Expanded(child: TextField(controller: _level, decoration: const InputDecoration(labelText: 'Level')))]),
       const SizedBox(height: 10),
-      DropdownButtonFormField<String>(value: _semester, decoration: const InputDecoration(labelText: 'Semester'), items: const [DropdownMenuItem(value: 'First Semester', child: Text('First Semester')), DropdownMenuItem(value: 'Second Semester', child: Text('Second Semester'))], onChanged: (value) => setState(() => _semester = value ?? 'First Semester')),
+            DropdownButtonFormField<String>(
+              initialValue: _semester,
+              decoration: const InputDecoration(labelText: 'Semester'),
+              items: const [
+                DropdownMenuItem(
+                  value: 'First Semester',
+                  child: Text('First Semester'),
+                ),
+                DropdownMenuItem(
+                  value: 'Second Semester',
+                  child: Text('Second Semester'),
+                ),
+              ],
+              onChanged: (value) =>
+                  setState(() => _semester = value ?? 'First Semester'),
+            ),
     ]))),
     actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, {'department_id': int.tryParse(_departmentId ?? ''), 'programme_id': int.tryParse(_programmeId ?? ''), 'title': _title.text.trim(), 'code': _code.text.trim(), 'unit': int.tryParse(_unit.text.trim()) ?? 0, 'semester': _semester, 'level': _level.text.trim(), 'is_active': true}), child: const Text('Create'))],
   );
@@ -347,7 +425,19 @@ class _AssignLecturerDialogState extends State<_AssignLecturerDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: Text('Assign lecturer to ${widget.course.code}'),
-    content: DropdownButtonFormField<String>(isExpanded: true, value: _lecturerId, decoration: const InputDecoration(labelText: 'Lecturer'), items: [for (final item in widget.lecturers) DropdownMenuItem(value: item.id, child: Text('${item.name} • ${item.email}'))], onChanged: (value) => setState(() => _lecturerId = value)),
+    content: DropdownButtonFormField<String>(
+      isExpanded: true,
+      initialValue: _lecturerId,
+      decoration: const InputDecoration(labelText: 'Lecturer'),
+      items: [
+        for (final item in widget.lecturers)
+          DropdownMenuItem(
+            value: item.id,
+            child: Text('${item.name} • ${item.email}'),
+          ),
+      ],
+      onChanged: (value) => setState(() => _lecturerId = value),
+    ),
     actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, _lecturerId), child: const Text('Assign'))],
   );
 }

@@ -4,7 +4,6 @@ import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
 import 'workspaces/academic_records_overview_panel.dart';
-import 'workspaces/academic_structure_panel.dart';
 import '../academic_setup/widgets/academic_setup_panel.dart';
 import 'workspaces/cohort_management_panel.dart';
 import 'workspaces/course_registration_approval_panel.dart';
@@ -19,7 +18,6 @@ import 'workspaces/lecturer_course_delivery_flow_panel.dart';
 import 'workspaces/lecturer_course_overview_panel.dart';
 import 'workspaces/level_adviser_overview_panel.dart';
 import 'workspaces/moderator_question_review_panel.dart';
-import 'workspaces/people_access_control_panel.dart';
 import 'workspaces/records_department_panel.dart';
 import 'workspaces/reports_analytics_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
@@ -490,8 +488,6 @@ class _RoleDrawer extends StatelessWidget {
             for (final role in AdminRole.values)
               RadioListTile<AdminRole>(
                 value: role,
-                // TODO: migrate this drawer list to RadioGroup after the app
-                // raises its minimum Flutter version past the transition.
                 // ignore: deprecated_member_use
                 groupValue: selectedRole,
                 // ignore: deprecated_member_use

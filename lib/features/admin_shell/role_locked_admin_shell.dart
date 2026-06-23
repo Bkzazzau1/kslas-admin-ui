@@ -27,8 +27,9 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
   String get _role {
     final session = _session;
     if (session == null) return 'lecturer';
-    if (session.primaryRole.isNotEmpty)
+    if (session.primaryRole.isNotEmpty) {
       return session.primaryRole.toLowerCase();
+    }
     if (session.roles.isNotEmpty) return session.roles.first.toLowerCase();
     return 'lecturer';
   }

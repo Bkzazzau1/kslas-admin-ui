@@ -89,6 +89,21 @@ class LecturerQuestionApi {
     return QuestionPaperItem.fromJson(_asMap(data));
   }
 
+  Future<String> uploadFile({
+    required List<int> bytes,
+    required String fileName,
+    required String category,
+  }) async {
+    final data = await _client.uploadBytes(
+      path: '/api/uploads',
+      bytes: bytes,
+      fileName: fileName,
+      category: category,
+    );
+    final json = _asMap(data);
+    return (json['url'] ?? json['file_url'] ?? json['path'] ?? '').toString();
+  }
+
   List<dynamic> _rows(dynamic data) {
     if (data is List) return data;
     if (data is Map) {
