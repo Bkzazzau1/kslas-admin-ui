@@ -25,6 +25,7 @@ import 'workspaces/reports_analytics_panel.dart';
 import 'workspaces/results_approval_release_panel.dart';
 import 'workspaces/student_support_helpdesk_panel.dart';
 import '../staff_management/widgets/staff_management_panel.dart';
+import '../lecturer_questions/widgets/lecturer_question_live_panel.dart';
 import 'widgets/admin_metric_card.dart';
 
 const _operationsPages = [
@@ -645,12 +646,14 @@ class _PrimaryPanel extends StatelessWidget {
       if (pageLabel == 'My Courses') {
         return const LecturerCourseOverviewPanel();
       }
+      if (pageLabel == 'Exam Questions') {
+        return const LecturerQuestionLivePanel();
+      }
       if (pageLabel == 'Course Materials' ||
           pageLabel == 'Video Lectures' ||
           pageLabel == 'Live Classes' ||
           pageLabel == 'Assignments' ||
           pageLabel == 'Quizzes & Tests' ||
-          pageLabel == 'Exam Questions' ||
           pageLabel == 'Student Engagement' ||
           pageLabel == 'Messages / Q&A' ||
           pageLabel == 'Profile') {
