@@ -37,12 +37,14 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
   int? _selectedCourseId;
   List<QuestionCourseOption> _courses = const [];
   List<QuestionPaperItem> _papers = const [];
+  final Set<String> _selectedQuestionIds = {};
   final List<_QuestionDraft> _questions = [
     _QuestionDraft.single(
       id: 'q1',
       topic: 'Stacks and queues',
       marks: '2',
       prompt: 'Which data structure follows last-in-first-out order?',
+      saved: true,
       options: [
         _OptionDraft('A', 'Queue'),
         _OptionDraft('B', 'Stack', true),
@@ -56,6 +58,7 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
       marks: '20',
       prompt: 'Explain insertion and search operations in a binary search tree.',
       answer: 'Award marks for search path, insertion point, and time complexity explanation.',
+      saved: true,
     ),
   ];
 
@@ -203,7 +206,7 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
     setState(() {
       _selectedFormat = type;
       for (var i = 0; i < count; i++) {
-        _questions.add(_QuestionDraft.forType('q${_questions.length + 1}', type, _batchMarks.text.trim().isEmpty ? '1' : _batchMarks.text.trim()));
+        _questions.add(_QuestionDraft.forType('q${DateTime.now().microsecondsSinceEpoch}_${_questions.length + 1}', type, _batchMarks.text.trim().isEmpty ? '1' : _batchMarks.text.trim()));
       }
     });
   }
@@ -223,11 +226,99 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
   }
 
   void _duplicate(_QuestionDraft item) {
-    setState(() => _questions.add(item.copy('q${_questions.length + 1}')));
+    setState(() => _questions.add(item.copy('q${DateTime.now().microsecondsSinceEpoch}')));
+  }
+
+  void _markChanged(_QuestionDraft item) {
+    item.saved = false;
+    setState(() => _notice = null);
+  }
+
+  void _saveQuestion(_QuestionDraft item) {
+    final number = _questions.indexOf(item) + 1;
+    final issues = item.contentIssues(number);
+    if (issues.isNotEmpty) {
+      _showError(issues.first);
+      return;
+    }
+    setState(() {
+      item.saved = true;
+      _notice = 'Question $number saved.';
+    });
+  }
+
+  void _saveAllQuestions() {
+    for (var i = 0; i < _questions.length; i++) {
+      final issues = _questions[i].contentIssues(i + 1);
+      if (issues.isNotEmpty) {
+        _showError(issues.first);
+        return;
+      }
+    }
+    setState(() {
+      for (final item in _questions) item.saved = true;
+      _notice = 'All questions saved.';
+    });
+  }
+
+  void _toggleQuestionSelection(_QuestionDraft item, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedQuestionIds.add(item.id);
+      } else {
+        _selectedQuestionIds.remove(item.id);
+      }
+    });
   }
 
   void _remove(_QuestionDraft item) {
-    setState(() => _questions.remove(item));
+    setState(() {
+      _selectedQuestionIds.remove(item.id);
+      _questions.remove(item);
+      _notice = 'Question removed.';
+    });
+  }
+
+  Future<void> _deleteSelectedQuestions() async {
+    if (_selectedQuestionIds.isEmpty) {
+      _showError('Select at least one question to delete.');
+      return;
+    }
+    final ok = await _confirmDelete('Delete selected questions?', 'This will remove ${_selectedQuestionIds.length} selected question(s) from the paper.');
+    if (ok != true || !mounted) return;
+    setState(() {
+      _questions.removeWhere((item) => _selectedQuestionIds.contains(item.id));
+      _selectedQuestionIds.clear();
+      _notice = 'Selected questions deleted.';
+    });
+  }
+
+  Future<void> _deleteAllQuestions() async {
+    if (_questions.isEmpty) {
+      _showError('There is no question to delete.');
+      return;
+    }
+    final ok = await _confirmDelete('Delete all questions?', 'This will remove every question from the paper.');
+    if (ok != true || !mounted) return;
+    setState(() {
+      _questions.clear();
+      _selectedQuestionIds.clear();
+      _notice = 'All questions deleted.';
+    });
+  }
+
+  Future<bool?> _confirmDelete(String title, String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton.tonalIcon(onPressed: () => Navigator.of(context).pop(true), icon: const Icon(Icons.delete_outline), label: const Text('Delete')),
+        ],
+      ),
+    );
   }
 
   Future<void> _uploadQuestions() async {
@@ -336,7 +427,7 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
                       onAutoMarkChanged: (v) => setState(() => _autoMark = v),
                     ),
                     const SizedBox(height: 14),
-                    _SummaryBar(totalMarks: _totalMarks, questions: _questions),
+                    _SummaryBar(totalMarks: _totalMarks, questions: _questions, selectedCount: _selectedQuestionIds.length),
                     const SizedBox(height: 14),
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -357,9 +448,15 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
                         );
                         final list = _QuestionList(
                           questions: _questions,
-                          onChanged: () => setState(() {}),
+                          selectedQuestionIds: _selectedQuestionIds,
+                          onChanged: _markChanged,
                           onDuplicate: _duplicate,
                           onRemove: _remove,
+                          onSave: _saveQuestion,
+                          onSelectedChanged: _toggleQuestionSelection,
+                          onSaveAll: _saveAllQuestions,
+                          onDeleteSelected: _deleteSelectedQuestions,
+                          onDeleteAll: _deleteAllQuestions,
                         );
                         if (!wide) return Column(children: [formats, const SizedBox(height: 14), list]);
                         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 390, child: formats), const SizedBox(width: 14), Expanded(child: list)]);
@@ -404,7 +501,7 @@ class _Header extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [Icon(reviewMode ? Icons.preview_outlined : Icons.rule_folder_outlined, color: scheme.primary), const SizedBox(width: 10), Expanded(child: Text(reviewMode ? 'Review Question Paper' : 'Exam Question Paper', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)))]),
             const SizedBox(height: 8),
-            Text(reviewMode ? 'Review the paper before sending it forward.' : 'Open one question format at a time. Only the selected format fields will appear.', style: TextStyle(color: scheme.onSurfaceVariant)),
+            Text(reviewMode ? 'Review the paper before sending it forward.' : 'Open one question format at a time. Save each question after editing, then review the paper.', style: TextStyle(color: scheme.onSurfaceVariant)),
           ]),
         ),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -450,17 +547,21 @@ class _PaperDetails extends StatelessWidget {
 }
 
 class _SummaryBar extends StatelessWidget {
-  const _SummaryBar({required this.totalMarks, required this.questions});
+  const _SummaryBar({required this.totalMarks, required this.questions, required this.selectedCount});
   final int totalMarks;
   final List<_QuestionDraft> questions;
+  final int selectedCount;
 
   @override
   Widget build(BuildContext context) {
+    final unsaved = questions.where((item) => !item.saved).length;
     final counts = <String, int>{};
     for (final q in questions) counts[q.type] = (counts[q.type] ?? 0) + 1;
     return _Panel(title: 'Paper summary', icon: Icons.analytics_outlined, child: Wrap(spacing: 10, runSpacing: 10, children: [
       _Metric(label: 'Questions', value: '${questions.length}', icon: Icons.format_list_numbered_outlined),
       _Metric(label: 'Total marks', value: '$totalMarks', icon: Icons.scoreboard_outlined),
+      _Metric(label: 'Unsaved', value: '$unsaved', icon: Icons.save_as_outlined),
+      _Metric(label: 'Selected', value: '$selectedCount', icon: Icons.check_box_outlined),
       for (final entry in counts.entries) _Metric(label: _format(entry.key).title, value: '${entry.value}', icon: _format(entry.key).icon),
     ]));
   }
@@ -534,27 +635,55 @@ class _FormatTile extends StatelessWidget {
 }
 
 class _QuestionList extends StatelessWidget {
-  const _QuestionList({required this.questions, required this.onChanged, required this.onDuplicate, required this.onRemove});
+  const _QuestionList({required this.questions, required this.selectedQuestionIds, required this.onChanged, required this.onDuplicate, required this.onRemove, required this.onSave, required this.onSelectedChanged, required this.onSaveAll, required this.onDeleteSelected, required this.onDeleteAll});
   final List<_QuestionDraft> questions;
-  final VoidCallback onChanged;
+  final Set<String> selectedQuestionIds;
+  final ValueChanged<_QuestionDraft> onChanged;
   final ValueChanged<_QuestionDraft> onDuplicate;
   final ValueChanged<_QuestionDraft> onRemove;
+  final ValueChanged<_QuestionDraft> onSave;
+  final void Function(_QuestionDraft item, bool selected) onSelectedChanged;
+  final VoidCallback onSaveAll;
+  final VoidCallback onDeleteSelected;
+  final VoidCallback onDeleteAll;
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(title: 'Questions added', icon: Icons.fact_check_outlined, child: questions.isEmpty ? const Text('No question added yet.') : Column(children: [
-      for (var i = 0; i < questions.length; i++) _QuestionCard(number: i + 1, item: questions[i], onChanged: onChanged, onDuplicate: () => onDuplicate(questions[i]), onRemove: () => onRemove(questions[i])),
+    return _Panel(title: 'Questions added', icon: Icons.fact_check_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        FilledButton.tonalIcon(onPressed: questions.isEmpty ? null : onSaveAll, icon: const Icon(Icons.save_outlined), label: const Text('Save all')),
+        OutlinedButton.icon(onPressed: selectedQuestionIds.isEmpty ? null : onDeleteSelected, icon: const Icon(Icons.delete_sweep_outlined), label: Text('Delete selected (${selectedQuestionIds.length})')),
+        TextButton.icon(onPressed: questions.isEmpty ? null : onDeleteAll, icon: const Icon(Icons.delete_forever_outlined), label: const Text('Delete all')),
+      ]),
+      const SizedBox(height: 12),
+      if (questions.isEmpty)
+        const Text('No question added yet.')
+      else
+        for (var i = 0; i < questions.length; i++)
+          _QuestionCard(
+            number: i + 1,
+            item: questions[i],
+            selected: selectedQuestionIds.contains(questions[i].id),
+            onChanged: () => onChanged(questions[i]),
+            onDuplicate: () => onDuplicate(questions[i]),
+            onRemove: () => onRemove(questions[i]),
+            onSave: () => onSave(questions[i]),
+            onSelectedChanged: (value) => onSelectedChanged(questions[i], value),
+          ),
     ]));
   }
 }
 
 class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({required this.number, required this.item, required this.onChanged, required this.onDuplicate, required this.onRemove});
+  const _QuestionCard({required this.number, required this.item, required this.selected, required this.onChanged, required this.onDuplicate, required this.onRemove, required this.onSave, required this.onSelectedChanged});
   final int number;
   final _QuestionDraft item;
+  final bool selected;
   final VoidCallback onChanged;
   final VoidCallback onDuplicate;
   final VoidCallback onRemove;
+  final VoidCallback onSave;
+  final ValueChanged<bool> onSelectedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -564,10 +693,10 @@ class _QuestionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(color: scheme.surfaceContainerHighest.withValues(alpha: 0.24), borderRadius: BorderRadius.circular(16), border: Border.all(color: issues.isEmpty ? scheme.outlineVariant : scheme.error)),
       child: ExpansionTile(
-        initiallyExpanded: number == 1,
-        leading: CircleAvatar(backgroundColor: scheme.primaryContainer, foregroundColor: scheme.onPrimaryContainer, child: Text('$number')),
-        title: Text(item.prompt.trim().isEmpty ? 'New ${_format(item.type).title}' : item.prompt.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Wrap(spacing: 6, runSpacing: 4, children: [_Pill(_format(item.type).title), _Pill('${item.marks} marks'), if (item.topic.trim().isNotEmpty) _Pill(item.topic), _Pill(issues.isEmpty ? 'Complete' : '${issues.length} to check')]),
+        initiallyExpanded: !item.saved && number == 1,
+        leading: Checkbox(value: selected, onChanged: (value) => onSelectedChanged(value ?? false)),
+        title: Text('Question $number: ${item.prompt.trim().isEmpty ? 'New ${_format(item.type).title}' : item.prompt.trim()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Wrap(spacing: 6, runSpacing: 4, children: [_Pill(_format(item.type).title), _Pill('${item.marks} marks'), if (item.topic.trim().isNotEmpty) _Pill(item.topic), _Pill(item.saved ? 'Saved' : 'Unsaved'), _Pill(issues.isEmpty ? 'Complete' : '${issues.length} to check')]),
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         children: [
           Wrap(spacing: 10, runSpacing: 10, children: [
@@ -582,6 +711,7 @@ class _QuestionCard extends StatelessWidget {
           if (issues.isNotEmpty) ...[const SizedBox(height: 10), _IssueBox(issues: issues)],
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.tonalIcon(onPressed: onSave, icon: const Icon(Icons.save_outlined), label: Text(item.saved ? 'Saved' : 'Save question')),
             OutlinedButton.icon(onPressed: onDuplicate, icon: const Icon(Icons.copy_outlined), label: const Text('Duplicate')),
             TextButton.icon(onPressed: onRemove, icon: const Icon(Icons.delete_outline), label: const Text('Remove')),
           ]),
@@ -684,7 +814,7 @@ class _ReviewTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: scheme.outlineVariant)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 6, runSpacing: 4, children: [_Pill('Question $number'), _Pill(_format(item.type).title), _Pill('${item.marks} marks')]),
+        Wrap(spacing: 6, runSpacing: 4, children: [_Pill('Question $number'), _Pill(_format(item.type).title), _Pill('${item.marks} marks'), _Pill(item.saved ? 'Saved' : 'Unsaved')]),
         const SizedBox(height: 8),
         Text(item.prompt, style: const TextStyle(fontWeight: FontWeight.w800)),
         if (item.needsOptions) ...[const SizedBox(height: 8), for (final option in item.validOptions) Text('${option.keyName}. ${option.text}${option.correct ? '  ✓' : ''}')],
@@ -703,7 +833,7 @@ class _ReviewCallout extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(16)), child: Wrap(spacing: 12, runSpacing: 10, alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, children: [
-      Text(issues.isEmpty ? 'Ready for lecturer review before submission.' : '${issues.length} item(s) must be fixed before review.', style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w800)),
+      Text(issues.isEmpty ? 'Ready for lecturer review before submission.' : '${issues.length} item(s) must be fixed or saved before review.', style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w800)),
       FilledButton.icon(onPressed: issues.isEmpty ? onReview : null, icon: const Icon(Icons.preview_outlined), label: const Text('Review paper')),
     ]));
   }
@@ -858,10 +988,10 @@ class _OptionDraft {
 }
 
 class _QuestionDraft {
-  _QuestionDraft({required this.id, required this.type, required this.topic, required this.marks, required this.prompt, required this.answer, this.rubric = '', this.partialMarking = false, List<_OptionDraft>? options}) : options = options ?? _defaultOptions();
-  factory _QuestionDraft.single({required String id, String topic = 'Course learning outcome', String marks = '1', String prompt = '', List<_OptionDraft>? options}) => _QuestionDraft(id: id, type: 'single_choice', topic: topic, marks: marks, prompt: prompt, answer: '', options: options);
+  _QuestionDraft({required this.id, required this.type, required this.topic, required this.marks, required this.prompt, required this.answer, this.rubric = '', this.partialMarking = false, this.saved = false, List<_OptionDraft>? options}) : options = options ?? _defaultOptions();
+  factory _QuestionDraft.single({required String id, String topic = 'Course learning outcome', String marks = '1', String prompt = '', bool saved = false, List<_OptionDraft>? options}) => _QuestionDraft(id: id, type: 'single_choice', topic: topic, marks: marks, prompt: prompt, answer: '', saved: saved, options: options);
   factory _QuestionDraft.multiple({required String id, String marks = '1'}) => _QuestionDraft(id: id, type: 'multiple_choice', topic: 'Course learning outcome', marks: marks, prompt: '', answer: '', partialMarking: true);
-  factory _QuestionDraft.essay({required String id, String topic = 'Course learning outcome', String marks = '10', String prompt = '', String answer = ''}) => _QuestionDraft(id: id, type: 'essay', topic: topic, marks: marks, prompt: prompt, answer: answer);
+  factory _QuestionDraft.essay({required String id, String topic = 'Course learning outcome', String marks = '10', String prompt = '', String answer = '', bool saved = false}) => _QuestionDraft(id: id, type: 'essay', topic: topic, marks: marks, prompt: prompt, answer: answer, saved: saved);
   factory _QuestionDraft.forType(String id, String type, String marks) {
     if (type == 'single_choice') return _QuestionDraft.single(id: id, marks: marks);
     if (type == 'multiple_choice') return _QuestionDraft.multiple(id: id, marks: marks);
@@ -877,6 +1007,7 @@ class _QuestionDraft {
   String answer;
   String rubric;
   bool partialMarking;
+  bool saved;
   List<_OptionDraft> options;
 
   bool get needsOptions => type == 'single_choice' || type == 'multiple_choice';
@@ -890,6 +1021,7 @@ class _QuestionDraft {
 
   void setType(String next) {
     type = next;
+    saved = false;
     if (needsOptions && options.length < 2) options = _defaultOptions();
     if (type == 'multiple_choice') partialMarking = true;
     if (type == 'single_choice' && correctKeys.length > 1) setSingleCorrect(correctKeys.first);
@@ -897,6 +1029,7 @@ class _QuestionDraft {
 
   void addOption() {
     options.add(_OptionDraft(String.fromCharCode('A'.codeUnitAt(0) + options.length), ''));
+    saved = false;
   }
 
   void setSingleCorrect(String key) {
@@ -908,7 +1041,7 @@ class _QuestionDraft {
     if (needsOptions) answer = correctKeys.join(',');
   }
 
-  List<String> requiredIssues(int number) {
+  List<String> contentIssues(int number) {
     final out = <String>[];
     final prefix = 'Question $number';
     if (prompt.trim().isEmpty) out.add('$prefix needs question text.');
@@ -917,6 +1050,12 @@ class _QuestionDraft {
     if (type == 'single_choice' && correctKeys.length != 1) out.add('$prefix needs exactly one correct answer.');
     if (type == 'multiple_choice' && correctKeys.length < 2) out.add('$prefix needs at least two correct answers.');
     if (!needsOptions && answer.trim().isEmpty) out.add('$prefix needs an answer key or marking guide.');
+    return out;
+  }
+
+  List<String> requiredIssues(int number) {
+    final out = contentIssues(number);
+    if (!saved) out.add('Question $number is not saved.');
     return out;
   }
 
