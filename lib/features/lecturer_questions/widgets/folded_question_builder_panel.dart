@@ -177,7 +177,7 @@ class _LecturerQuestionLivePanelState extends State<LecturerQuestionLivePanel> {
 
   Map<String, dynamic> _payload() {
     return {
-      'version': 3,
+      'version': 4,
       'source': 'folded_lecturer_question_builder',
       'auto_mark_objective': _autoMark,
       'allowed_question_types': const [
@@ -518,7 +518,7 @@ class _Header extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [Icon(reviewMode ? Icons.preview_outlined : Icons.rule_folder_outlined, color: scheme.primary), const SizedBox(width: 10), Expanded(child: Text(reviewMode ? 'Review Question Paper' : 'Exam Question Paper', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)))]),
             const SizedBox(height: 8),
-            Text(reviewMode ? 'Review the paper before sending it forward.' : 'Open one question format at a time. For picture questions, upload the image and students will answer in theory.', style: TextStyle(color: scheme.onSurfaceVariant)),
+            Text(reviewMode ? 'Review the paper before sending it forward.' : 'Open one question format at a time. Drag and drop questions now use simple matching pairs.', style: TextStyle(color: scheme.onSurfaceVariant)),
           ]),
         ),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -716,7 +716,7 @@ class _QuestionCard extends StatelessWidget {
         initiallyExpanded: !item.saved && number == 1,
         leading: Checkbox(value: selected, onChanged: (value) => onSelectedChanged(value ?? false)),
         title: Text('Question $number: ${item.prompt.trim().isEmpty ? 'New ${_format(item.type).title}' : item.prompt.trim()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Wrap(spacing: 6, runSpacing: 4, children: [_Pill(_format(item.type).title), _Pill('${item.marks} marks'), if (item.topic.trim().isNotEmpty) _Pill(item.topic), _Pill(item.saved ? 'Saved' : 'Unsaved'), if (item.type == 'image_question') _Pill(item.imageFileName.isEmpty ? 'Image needed' : 'Image uploaded'), _Pill(issues.isEmpty ? 'Complete' : '${issues.length} to check')]),
+        subtitle: Wrap(spacing: 6, runSpacing: 4, children: [_Pill(_format(item.type).title), _Pill('${item.marks} marks'), if (item.topic.trim().isNotEmpty) _Pill(item.topic), _Pill(item.saved ? 'Saved' : 'Unsaved'), if (item.type == 'drag_drop') _Pill('${item.validMatchPairs.length} pairs'), if (item.type == 'image_question') _Pill(item.imageFileName.isEmpty ? 'Image needed' : 'Image uploaded'), _Pill(issues.isEmpty ? 'Complete' : '${issues.length} to check')]),
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         children: [
           Wrap(spacing: 10, runSpacing: 10, children: [
@@ -773,7 +773,32 @@ class _FieldsForFormat extends StatelessWidget {
       ]);
     }
     if (item.type == 'drag_drop') {
-      return TextFormField(initialValue: item.answer, minLines: 2, maxLines: 5, onChanged: (v) { item.answer = v; onChanged(); }, decoration: const InputDecoration(labelText: 'Correct matching pairs', helperText: 'Example: CPU=Processor; RAM=Memory', prefixIcon: Icon(Icons.drag_indicator_outlined)));
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Build the matching pairs', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text('Students will drag items from the right side to match the items on the left. Enter the correct pair here.', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 12),
+            for (var i = 0; i < item.matchPairs.length; i++) Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                SizedBox(width: 60, child: Text('Pair ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800))),
+                SizedBox(width: 300, child: TextFormField(initialValue: item.matchPairs[i].left, onChanged: (v) { item.matchPairs[i] = item.matchPairs[i].copy(left: v); item.saved = false; onChanged(); }, decoration: const InputDecoration(labelText: 'Left item shown to student'))),
+                SizedBox(width: 300, child: TextFormField(initialValue: item.matchPairs[i].right, onChanged: (v) { item.matchPairs[i] = item.matchPairs[i].copy(right: v); item.saved = false; onChanged(); }, decoration: const InputDecoration(labelText: 'Correct match'))),
+                IconButton.filledTonal(onPressed: item.matchPairs.length <= 2 ? null : () { item.matchPairs.removeAt(i); item.saved = false; onChanged(); }, icon: const Icon(Icons.delete_outline), tooltip: 'Remove pair'),
+              ]),
+            ),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              OutlinedButton.icon(onPressed: () { item.addMatchPair(); onChanged(); }, icon: const Icon(Icons.add_outlined), label: const Text('Add pair')),
+              _Pill('${item.validMatchPairs.length} complete pair(s)'),
+            ]),
+          ]),
+        ),
+      ]);
     }
     if (item.type == 'image_question') {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -866,13 +891,18 @@ class _ReviewTile extends StatelessWidget {
         Wrap(spacing: 6, runSpacing: 4, children: [_Pill('Question $number'), _Pill(_format(item.type).title), _Pill('${item.marks} marks'), _Pill(item.saved ? 'Saved' : 'Unsaved')]),
         const SizedBox(height: 8),
         Text(item.prompt, style: const TextStyle(fontWeight: FontWeight.w800)),
+        if (item.type == 'drag_drop') ...[
+          const SizedBox(height: 8),
+          Text('Student interaction: Drag right-side items to match the left-side items.', style: TextStyle(color: scheme.onSurfaceVariant)),
+          for (final pair in item.validMatchPairs) Text('${pair.left} → ${pair.right}', style: TextStyle(color: scheme.onSurfaceVariant)),
+        ],
         if (item.type == 'image_question') ...[
           const SizedBox(height: 8),
           Text(item.imageFileName.isEmpty ? 'No image uploaded.' : 'Question image: ${item.imageFileName}', style: TextStyle(color: scheme.onSurfaceVariant)),
           Text('Student answer mode: Theory / text answer', style: TextStyle(color: scheme.onSurfaceVariant)),
         ],
         if (item.needsOptions) ...[const SizedBox(height: 8), for (final option in item.validOptions) Text('${option.keyName}. ${option.text}${option.correct ? '  ✓' : ''}')],
-        if (!item.needsOptions && item.answer.trim().isNotEmpty) ...[const SizedBox(height: 8), Text('Answer guide: ${item.answer}', style: TextStyle(color: scheme.onSurfaceVariant))],
+        if (!item.needsOptions && item.type != 'drag_drop' && item.answer.trim().isNotEmpty) ...[const SizedBox(height: 8), Text('Answer guide: ${item.answer}', style: TextStyle(color: scheme.onSurfaceVariant))],
       ]),
     );
   }
@@ -1025,7 +1055,7 @@ const _formats = [
   _Format('multiple_choice', 'Multiple answers', 'Two or more correct options.', 'Use when more than one option is correct. Partial marking can be enabled.', Icons.checklist_rtl_outlined),
   _Format('fill_blank', 'Fill in the blank', 'Short typed answer.', 'Best for formulas, keywords, definitions, and short responses.', Icons.short_text_outlined),
   _Format('essay', 'Essay / Theory', 'Long answer with marking guide.', 'Best for explanations, calculations, case studies, and theory answers.', Icons.subject_outlined),
-  _Format('drag_drop', 'Drag and drop', 'Matching or ordering task.', 'Best for matching terms, ordering steps, or arranging items.', Icons.drag_indicator_outlined),
+  _Format('drag_drop', 'Drag and drop', 'Match items by dragging.', 'Lecturer enters left items and their correct matches. Students drag the right-side items to the correct left item.', Icons.drag_indicator_outlined),
   _Format('image_question', 'Picture question', 'Upload image, student answers in theory.', 'Lecturer uploads PNG/JPG/other image. Student writes a theory/text answer.', Icons.image_outlined),
   _Format('file_upload', 'File upload / Practical', 'Student submits a file.', 'Best for code, documents, drawings, spreadsheets, or practical tasks.', Icons.attach_file_outlined),
 ];
@@ -1041,15 +1071,28 @@ class _OptionDraft {
   Map<String, dynamic> toPayload() => {'key': keyName, 'text': text.trim(), 'is_correct': correct};
 }
 
+class _MatchPairDraft {
+  const _MatchPairDraft({this.left = '', this.right = ''});
+  final String left;
+  final String right;
+  bool get complete => left.trim().isNotEmpty && right.trim().isNotEmpty;
+  _MatchPairDraft copy({String? left, String? right}) => _MatchPairDraft(left: left ?? this.left, right: right ?? this.right);
+  Map<String, dynamic> toPayload(int order) => {'order': order, 'left': left.trim(), 'right': right.trim()};
+}
+
 class _QuestionDraft {
-  _QuestionDraft({required this.id, required this.type, required this.topic, required this.marks, required this.prompt, required this.answer, this.rubric = '', this.partialMarking = false, this.saved = false, this.imageFileName = '', this.imageFileUrl = '', this.imageUploading = false, List<_OptionDraft>? options}) : options = options ?? _defaultOptions();
+  _QuestionDraft({required this.id, required this.type, required this.topic, required this.marks, required this.prompt, required this.answer, this.rubric = '', this.partialMarking = false, this.saved = false, this.imageFileName = '', this.imageFileUrl = '', this.imageUploading = false, List<_OptionDraft>? options, List<_MatchPairDraft>? matchPairs})
+      : options = options ?? _defaultOptions(),
+        matchPairs = matchPairs ?? _defaultMatchPairs();
   factory _QuestionDraft.single({required String id, String topic = 'Course learning outcome', String marks = '1', String prompt = '', bool saved = false, List<_OptionDraft>? options}) => _QuestionDraft(id: id, type: 'single_choice', topic: topic, marks: marks, prompt: prompt, answer: '', saved: saved, options: options);
   factory _QuestionDraft.multiple({required String id, String marks = '1'}) => _QuestionDraft(id: id, type: 'multiple_choice', topic: 'Course learning outcome', marks: marks, prompt: '', answer: '', partialMarking: true);
   factory _QuestionDraft.essay({required String id, String topic = 'Course learning outcome', String marks = '10', String prompt = '', String answer = '', bool saved = false}) => _QuestionDraft(id: id, type: 'essay', topic: topic, marks: marks, prompt: prompt, answer: answer, saved: saved);
+  factory _QuestionDraft.dragDrop({required String id, String marks = '1'}) => _QuestionDraft(id: id, type: 'drag_drop', topic: 'Course learning outcome', marks: marks, prompt: '', answer: '', matchPairs: _defaultMatchPairs());
   factory _QuestionDraft.forType(String id, String type, String marks) {
     if (type == 'single_choice') return _QuestionDraft.single(id: id, marks: marks);
     if (type == 'multiple_choice') return _QuestionDraft.multiple(id: id, marks: marks);
     if (type == 'essay') return _QuestionDraft.essay(id: id, marks: marks);
+    if (type == 'drag_drop') return _QuestionDraft.dragDrop(id: id, marks: marks);
     return _QuestionDraft(id: id, type: type, topic: 'Course learning outcome', marks: marks, prompt: '', answer: '');
   }
 
@@ -1066,26 +1109,35 @@ class _QuestionDraft {
   String imageFileUrl;
   bool imageUploading;
   List<_OptionDraft> options;
+  List<_MatchPairDraft> matchPairs;
 
   bool get needsOptions => type == 'single_choice' || type == 'multiple_choice';
   List<_OptionDraft> get validOptions => options.where((o) => o.text.trim().isNotEmpty).toList();
   Set<String> get correctKeys => options.where((o) => o.correct).map((o) => o.keyName).toSet();
   String? get singleCorrect => correctKeys.isEmpty ? null : correctKeys.first;
+  List<_MatchPairDraft> get validMatchPairs => matchPairs.where((pair) => pair.complete).toList();
 
   static List<_OptionDraft> _defaultOptions() => [_OptionDraft('A', ''), _OptionDraft('B', ''), _OptionDraft('C', ''), _OptionDraft('D', '')];
+  static List<_MatchPairDraft> _defaultMatchPairs() => const [_MatchPairDraft(), _MatchPairDraft()];
 
-  _QuestionDraft copy(String newId) => _QuestionDraft(id: newId, type: type, topic: topic, marks: marks, prompt: prompt, answer: answer, rubric: rubric, partialMarking: partialMarking, imageFileName: imageFileName, imageFileUrl: imageFileUrl, options: [for (final o in options) o.copy()]);
+  _QuestionDraft copy(String newId) => _QuestionDraft(id: newId, type: type, topic: topic, marks: marks, prompt: prompt, answer: answer, rubric: rubric, partialMarking: partialMarking, imageFileName: imageFileName, imageFileUrl: imageFileUrl, options: [for (final o in options) o.copy()], matchPairs: [for (final pair in matchPairs) pair.copy()]);
 
   void setType(String next) {
     type = next;
     saved = false;
     if (needsOptions && options.length < 2) options = _defaultOptions();
+    if (type == 'drag_drop' && matchPairs.length < 2) matchPairs = _defaultMatchPairs();
     if (type == 'multiple_choice') partialMarking = true;
     if (type == 'single_choice' && correctKeys.length > 1) setSingleCorrect(correctKeys.first);
   }
 
   void addOption() {
     options.add(_OptionDraft(String.fromCharCode('A'.codeUnitAt(0) + options.length), ''));
+    saved = false;
+  }
+
+  void addMatchPair() {
+    matchPairs.add(const _MatchPairDraft());
     saved = false;
   }
 
@@ -1106,8 +1158,9 @@ class _QuestionDraft {
     if (needsOptions && validOptions.length < 2) out.add('$prefix needs at least two options.');
     if (type == 'single_choice' && correctKeys.length != 1) out.add('$prefix needs exactly one correct answer.');
     if (type == 'multiple_choice' && correctKeys.length < 2) out.add('$prefix needs at least two correct answers.');
+    if (type == 'drag_drop' && validMatchPairs.length < 2) out.add('$prefix needs at least two complete matching pairs.');
     if (type == 'image_question' && imageFileUrl.trim().isEmpty) out.add('$prefix needs an uploaded image.');
-    if (!needsOptions && answer.trim().isEmpty) out.add('$prefix needs an answer key or marking guide.');
+    if (!needsOptions && type != 'drag_drop' && answer.trim().isEmpty) out.add('$prefix needs an answer key or marking guide.');
     return out;
   }
 
@@ -1131,6 +1184,7 @@ class _QuestionDraft {
         'topic': topic,
         'rubric': rubric,
         'partial_marking': partialMarking,
+        if (type == 'drag_drop') 'student_interaction': 'drag_to_match',
         if (type == 'image_question') 'student_answer_mode': 'theory_text',
       },
     };
@@ -1141,8 +1195,10 @@ class _QuestionDraft {
     } else if (type == 'fill_blank') {
       payload['correct_answer'] = answer;
     } else if (type == 'drag_drop') {
-      payload['matching_guide'] = answer;
-      payload['pairs'] = _pairs(answer);
+      payload['pairs'] = [for (var i = 0; i < validMatchPairs.length; i++) validMatchPairs[i].toPayload(i + 1)];
+      payload['matching_guide'] = validMatchPairs.map((pair) => '${pair.left.trim()}=${pair.right.trim()}').join('; ');
+      payload['student_interaction'] = 'drag_to_match';
+      payload['shuffle_right_items'] = true;
     } else {
       payload['marking_guide'] = answer;
     }
@@ -1155,14 +1211,5 @@ class _QuestionDraft {
     }
     if (type == 'file_upload') payload['allowed_file_types'] = ['pdf', 'docx', 'zip', 'jpg', 'png'];
     return payload;
-  }
-
-  List<Map<String, String>> _pairs(String value) {
-    final out = <Map<String, String>>[];
-    for (final raw in value.split(';')) {
-      final parts = raw.split('=');
-      if (parts.length == 2) out.add({'left': parts[0].trim(), 'right': parts[1].trim()});
-    }
-    return out;
   }
 }
