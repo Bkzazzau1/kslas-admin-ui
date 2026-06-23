@@ -37,6 +37,13 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_role == 'lecturer') {
+      return const AdminOperationsShell(
+        initialRole: AdminRole.lecturer,
+        lockRole: true,
+      );
+    }
+
     final compact = MediaQuery.sizeOf(context).width < 860;
     final pages = _pages;
     final safeIndex = _selectedIndex >= pages.length ? 0 : _selectedIndex;

@@ -283,9 +283,14 @@ IconData _workspaceIconForRole(AdminRole role) {
 }
 
 class AdminOperationsShell extends StatefulWidget {
-  const AdminOperationsShell({super.key, this.initialRole});
+  const AdminOperationsShell({
+    super.key,
+    this.initialRole,
+    this.lockRole = false,
+  });
 
   final AdminRole? initialRole;
+  final bool lockRole;
 
   @override
   State<AdminOperationsShell> createState() => _AdminOperationsShellState();
@@ -318,7 +323,7 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
               ],
             )
           : null,
-      drawer: compact
+      drawer: compact && !widget.lockRole
           ? _RoleDrawer(selectedRole: _selectedRole, onRoleChanged: _changeRole)
           : null,
       body: Row(
@@ -330,6 +335,7 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
               pages: pages,
               onPageChanged: (value) => setState(() => _selectedPage = value),
               onRoleChanged: _changeRole,
+              lockRole: widget.lockRole,
             ),
           Expanded(
             child: _AdminOperationsWorkspace(
@@ -359,6 +365,7 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
   }
 
   void _changeRole(AdminRole role) {
+    if (widget.lockRole) return;
     setState(() {
       _selectedRole = role;
       _selectedPage = 0;
@@ -373,6 +380,7 @@ class _AdminSideBar extends StatelessWidget {
     required this.pages,
     required this.onPageChanged,
     required this.onRoleChanged,
+    required this.lockRole,
   });
 
   final int selectedPage;
@@ -380,6 +388,7 @@ class _AdminSideBar extends StatelessWidget {
   final List<_OpsPage> pages;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<AdminRole> onRoleChanged;
+  final bool lockRole;
 
   @override
   Widget build(BuildContext context) {
@@ -404,21 +413,24 @@ class _AdminSideBar extends StatelessWidget {
               subtitle: Text(_workspaceSubtitleForRole(selectedRole)),
             ),
             const SizedBox(height: 10),
-            DropdownButtonFormField<AdminRole>(
-              initialValue: selectedRole,
-              decoration: const InputDecoration(
-                labelText: 'Workspace role',
-                prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+            if (!lockRole) ...[
+              DropdownButtonFormField<AdminRole>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Workspace role',
+                  prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                ),
+                items: [
+                  for (final role in AdminRole.values)
+                    DropdownMenuItem(value: role, child: Text(role.label)),
+                ],
+                onChanged: (role) {
+                  if (role != null) onRoleChanged(role);
+                },
               ),
-              items: [
-                for (final role in AdminRole.values)
-                  DropdownMenuItem(value: role, child: Text(role.label)),
-              ],
-              onChanged: (role) {
-                if (role != null) onRoleChanged(role);
-              },
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ] else
+              const SizedBox(height: 16),
             for (var i = 0; i < pages.length; i++)
               _NavigationTile(
                 page: pages[i],
