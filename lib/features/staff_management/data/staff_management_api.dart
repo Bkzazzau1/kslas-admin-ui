@@ -59,13 +59,27 @@ class StaffManagementApi {
   }
 
   Future<void> assignRole({required String staffId, required String role, String? departmentId, String? courseId}) async {
+    final numericStaffId = int.tryParse(staffId);
+    if (numericStaffId == null) {
+      throw const ApiException('Invalid staff selected');
+    }
+
+    final numericDepartmentId = int.tryParse(departmentId ?? '');
+    final numericCourseId = int.tryParse(courseId ?? '');
+    final useCourseScope = numericCourseId != null;
+
     final payload = <String, dynamic>{
-      'staff_id': staffId,
+      'staff_id': numericStaffId,
       'role': role,
-      'scope': courseId != null && courseId.isNotEmpty ? 'course' : 'department',
+      'scope': useCourseScope ? 'course' : 'department',
     };
-    if (departmentId != null && departmentId.isNotEmpty) payload['department_id'] = departmentId;
-    if (courseId != null && courseId.isNotEmpty) payload['course_id'] = courseId;
+
+    if (useCourseScope) {
+      payload['course_id'] = numericCourseId;
+    } else if (numericDepartmentId != null) {
+      payload['department_id'] = numericDepartmentId;
+    }
+
     await _client.post('/api/admin/staff-roles', body: payload);
   }
 
