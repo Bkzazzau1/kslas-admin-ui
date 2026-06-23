@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/auth/auth_session.dart';
 import '../../data/mock_admin_repository.dart';
 import '../../models/admin_role.dart';
 import '../../models/dashboard_models.dart';
@@ -319,6 +320,11 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
                   onPressed: () {},
                   icon: const Icon(Icons.notifications_none_outlined),
                 ),
+                IconButton(
+                  tooltip: 'Sign out',
+                  onPressed: _signOut,
+                  icon: const Icon(Icons.logout_outlined),
+                ),
               ],
             )
           : null,
@@ -335,6 +341,7 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
               onPageChanged: (value) => setState(() => _selectedPage = value),
               onRoleChanged: _changeRole,
               lockRole: widget.lockRole,
+              onLogout: _signOut,
             ),
           Expanded(
             child: _AdminOperationsWorkspace(
@@ -370,6 +377,10 @@ class _AdminOperationsShellState extends State<AdminOperationsShell> {
       _selectedPage = 0;
     });
   }
+
+  Future<void> _signOut() async {
+    await AuthSession.instance.signOut();
+  }
 }
 
 class _AdminSideBar extends StatelessWidget {
@@ -380,6 +391,7 @@ class _AdminSideBar extends StatelessWidget {
     required this.onPageChanged,
     required this.onRoleChanged,
     required this.lockRole,
+    required this.onLogout,
   });
 
   final int selectedPage;
@@ -388,6 +400,7 @@ class _AdminSideBar extends StatelessWidget {
   final ValueChanged<int> onPageChanged;
   final ValueChanged<AdminRole> onRoleChanged;
   final bool lockRole;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -410,6 +423,11 @@ class _AdminSideBar extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
               subtitle: Text(_workspaceSubtitleForRole(selectedRole)),
+              trailing: IconButton(
+                tooltip: 'Sign out',
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout_outlined),
+              ),
             ),
             const SizedBox(height: 10),
             if (!lockRole) ...[
