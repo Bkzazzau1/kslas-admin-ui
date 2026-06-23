@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../exam_workflow/data/exam_workflow_api.dart';
+
 class ExamManagementPanel extends StatefulWidget {
   const ExamManagementPanel({super.key});
 
@@ -8,94 +10,253 @@ class ExamManagementPanel extends StatefulWidget {
 }
 
 class _ExamManagementPanelState extends State<ExamManagementPanel> {
-  String _selectedStatus = 'All';
-  String _selectedMode = 'All';
+  final ExamWorkflowApi _api = ExamWorkflowApi();
 
-  static const _exams = [
-    _ExamPlan(
-      courseCode: 'CSC 305',
-      title: 'Data Structures CBT',
-      mode: 'CBT Centre',
-      dateTime: '2026-06-18 09:00',
-      venue: 'ICT Lab A',
-      candidates: 248,
-      invigilators: 4,
-      questionStatus: 'Approved',
-      readiness: 'Ready',
-      incidentCount: 0,
-    ),
-    _ExamPlan(
-      courseCode: 'CSC 309',
-      title: 'Artificial Intelligence Assessment',
-      mode: 'Distance Learning',
-      dateTime: '2026-06-20 14:00',
-      venue: 'Online Proctored',
-      candidates: 197,
-      invigilators: 6,
-      questionStatus: 'Moderator Query',
-      readiness: 'Needs Attention',
-      incidentCount: 2,
-    ),
-    _ExamPlan(
-      courseCode: 'GST 303',
-      title: 'Communication in English',
-      mode: 'CBT Centre',
-      dateTime: '2026-06-22 11:00',
-      venue: 'CBT Centre 1',
-      candidates: 620,
-      invigilators: 10,
-      questionStatus: 'Awaiting Exam Officer',
-      readiness: 'Pending',
-      incidentCount: 0,
-    ),
-    _ExamPlan(
-      courseCode: 'SEN 301',
-      title: 'Requirements Engineering Practical',
-      mode: 'Hybrid',
-      dateTime: '2026-06-25 10:00',
-      venue: 'Lab B + Online',
-      candidates: 132,
-      invigilators: 3,
-      questionStatus: 'Approved',
-      readiness: 'Ready',
-      incidentCount: 1,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  String _filter = 'all';
+  int? _busyExamId;
+  List<ExamWorkflowItem> _items = const [];
 
-  static const _incidents = [
-    _ExamIncident(
-      exam: 'CSC 309',
-      report: 'Two candidates triggered repeated face-away alerts.',
-      severity: 'High',
-      owner: 'Chief Invigilator',
-      time: 'Today, 09:34',
-    ),
-    _ExamIncident(
-      exam: 'SEN 301',
-      report: 'One workstation reported unstable network during upload.',
-      severity: 'Medium',
-      owner: 'Invigilator',
-      time: 'Yesterday, 15:10',
-    ),
-    _ExamIncident(
-      exam: 'GST 303',
-      report: 'Question paper still awaiting final exam office packaging.',
-      severity: 'Low',
-      owner: 'Exam Officer',
-      time: 'Yesterday, 10:45',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _api.close();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final items = await _api.fetchExams();
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  List<ExamWorkflowItem> get _visibleItems {
+    if (_filter == 'all') return _items;
+    return _items.where((item) => item.status == _filter).toList();
+  }
+
+  Future<void> _runAction(int examId, Future<void> Function() action) async {
+    setState(() => _busyExamId = examId);
+    try {
+      await action();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exam workflow updated successfully.')),
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _busyExamId = null);
+    }
+  }
+
+  Future<String?> _commentDialog({
+    required String title,
+    required String hint,
+  }) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            minLines: 3,
+            maxLines: 5,
+            decoration: InputDecoration(
+              labelText: 'Review note',
+              hintText: hint,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
+
+  Future<void> _scheduleDialog(ExamWorkflowItem item) async {
+    final start = DateTime.now().toUtc().add(const Duration(days: 3));
+    final end = start.add(const Duration(hours: 2));
+    final startController = TextEditingController(text: start.toIso8601String());
+    final endController = TextEditingController(text: end.toIso8601String());
+    final durationController = TextEditingController(
+      text: item.durationMinutes > 0 ? item.durationMinutes.toString() : '120',
+    );
+    final venueController = TextEditingController(
+      text: item.venue.isNotEmpty ? item.venue : 'Remote Proctored Exam',
+    );
+    final commentController = TextEditingController(text: 'Exam scheduled for student access.');
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) {
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Schedule exam'),
+              content: SizedBox(
+                width: 520,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (errorText != null) ...[
+                      Text(errorText!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      const SizedBox(height: 10),
+                    ],
+                    TextField(
+                      controller: startController,
+                      decoration: const InputDecoration(
+                        labelText: 'Start time',
+                        helperText: 'Use ISO time, for example 2026-06-26T09:00:00Z',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: endController,
+                      decoration: const InputDecoration(
+                        labelText: 'End time',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: durationController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Duration in minutes',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: venueController,
+                      decoration: const InputDecoration(
+                        labelText: 'Exam location',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: commentController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Schedule note',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final startAt = DateTime.tryParse(startController.text.trim());
+                    final endAt = DateTime.tryParse(endController.text.trim());
+                    final duration = int.tryParse(durationController.text.trim());
+
+                    if (startAt == null || endAt == null || duration == null || !endAt.isAfter(startAt)) {
+                      setDialogState(() => errorText = 'Please enter valid exam time and duration.');
+                      return;
+                    }
+
+                    Navigator.pop(context, {
+                      'start_time': startAt,
+                      'end_time': endAt,
+                      'duration_minutes': duration,
+                      'venue': venueController.text.trim(),
+                      'comment': commentController.text.trim(),
+                    });
+                  },
+                  child: const Text('Schedule'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    startController.dispose();
+    endController.dispose();
+    durationController.dispose();
+    venueController.dispose();
+    commentController.dispose();
+
+    if (result == null) return;
+
+    await _runAction(
+      item.id,
+      () => _api.scheduleExam(
+        examId: item.id,
+        startTime: result['start_time'] as DateTime,
+        endTime: result['end_time'] as DateTime,
+        durationMinutes: result['duration_minutes'] as int,
+        venue: result['venue']?.toString() ?? '',
+        comment: result['comment']?.toString() ?? '',
+      ),
+    );
+  }
+
+  Future<void> _withComment(
+    ExamWorkflowItem item, {
+    required String title,
+    required String hint,
+    required Future<void> Function(String comment) action,
+  }) async {
+    final comment = await _commentDialog(title: title, hint: hint);
+    if (comment == null) return;
+    await _runAction(item.id, () => action(comment));
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final filtered = _exams
-        .where(
-          (exam) =>
-              _selectedStatus == 'All' || exam.readiness == _selectedStatus,
-        )
-        .where((exam) => _selectedMode == 'All' || exam.mode == _selectedMode)
-        .toList();
+    final visible = _visibleItems;
 
     return Card(
       child: Padding(
@@ -105,157 +266,168 @@ class _ExamManagementPanelState extends State<ExamManagementPanel> {
           children: [
             Row(
               children: [
-                Icon(Icons.assignment_outlined, color: scheme.primary),
+                Icon(Icons.rule_folder_outlined, color: scheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Exam Officer / Exam Management',
+                    'Examination Workflow',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Schedule exam'),
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _load,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh'),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Text(
+              'Lecturer question papers, exam officer review, moderator notes, corrections and scheduling.',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: const [
-                _ExamChip(
-                  label: 'Scheduled exams: 42',
-                  icon: Icons.event_available_outlined,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _FilterChip(
+                  label: 'All ${_items.length}',
+                  selected: _filter == 'all',
+                  onSelected: () => setState(() => _filter = 'all'),
                 ),
-                _ExamChip(
-                  label: 'Question approval: 9',
-                  icon: Icons.rule_folder_outlined,
-                ),
-                _ExamChip(
-                  label: 'Invigilator gaps: 4',
-                  icon: Icons.person_add_alt_1_outlined,
-                ),
-                _ExamChip(
-                  label: 'Open incidents: 3',
-                  icon: Icons.report_problem_outlined,
-                ),
+                for (final status in [
+                  'draft',
+                  'officer_review',
+                  'moderator_review',
+                  'moderated',
+                  'lecturer_correction',
+                  'scheduled',
+                  'released',
+                ])
+                  _FilterChip(
+                    label: '${_statusLabel(status)} ${_items.where((e) => e.status == status).length}',
+                    selected: _filter == status,
+                    onSelected: () => setState(() => _filter = status),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                SizedBox(
-                  width: 230,
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _selectedStatus,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'All',
-                        child: Text('All readiness'),
-                      ),
-                      DropdownMenuItem(value: 'Ready', child: Text('Ready')),
-                      DropdownMenuItem(
-                        value: 'Pending',
-                        child: Text('Pending'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Needs Attention',
-                        child: Text('Needs Attention'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedStatus = value ?? 'All'),
-                    decoration: const InputDecoration(labelText: 'Readiness'),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_error != null)
+              _ErrorBox(message: _error!, onRetry: _load)
+            else if (visible.isEmpty)
+              const _EmptyBox()
+            else
+              for (final item in visible)
+                _ExamWorkflowTile(
+                  item: item,
+                  busy: _busyExamId == item.id,
+                  onSubmitToOfficer: () => _withComment(
+                    item,
+                    title: 'Submit to Exam Officer',
+                    hint: 'Add a short note for the exam officer.',
+                    action: (comment) => _api.submitToOfficer(item.id, comment),
+                  ),
+                  onSendToModerator: () => _withComment(
+                    item,
+                    title: 'Send to Moderator',
+                    hint: 'Add the review instruction for the moderator.',
+                    action: (comment) => _api.sendToModerator(item.id, comment),
+                  ),
+                  onModeratorReturn: () => _withComment(
+                    item,
+                    title: 'Return with Notes',
+                    hint: 'Enter moderator note for the exam officer.',
+                    action: (comment) => _api.moderatorReturn(item.id, comment),
+                  ),
+                  onSendBackToLecturer: () => _withComment(
+                    item,
+                    title: 'Send Back to Lecturer',
+                    hint: 'Explain the correction needed.',
+                    action: (comment) => _api.sendBackToLecturer(item.id, comment),
+                  ),
+                  onSchedule: () => _scheduleDialog(item),
+                  onRelease: () => _withComment(
+                    item,
+                    title: 'Release Exam',
+                    hint: 'Add release note.',
+                    action: (comment) => _api.releaseExam(item.id, comment),
                   ),
                 ),
-                SizedBox(
-                  width: 230,
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _selectedMode,
-                    items: const [
-                      DropdownMenuItem(value: 'All', child: Text('All modes')),
-                      DropdownMenuItem(
-                        value: 'CBT Centre',
-                        child: Text('CBT Centre'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Distance Learning',
-                        child: Text('Distance Learning'),
-                      ),
-                      DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedMode = value ?? 'All'),
-                    decoration: const InputDecoration(labelText: 'Exam mode'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Exam readiness queue',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            for (final exam in filtered) _ExamPlanTile(exam: exam),
-            const SizedBox(height: 18),
-            Text(
-              'Incident escalation',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            for (final incident in _incidents)
-              _IncidentTile(incident: incident),
           ],
         ),
       ),
     );
   }
+
+  static String _statusLabel(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase() + part.substring(1))
+        .join(' ');
+  }
 }
 
-class _ExamPlanTile extends StatelessWidget {
-  const _ExamPlanTile({required this.exam});
 
-  final _ExamPlan exam;
+String _humanLabel(String value) {
+  return value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0].toUpperCase() + part.substring(1))
+      .join(' ');
+}
+
+class _ExamWorkflowTile extends StatelessWidget {
+  const _ExamWorkflowTile({
+    required this.item,
+    required this.busy,
+    required this.onSubmitToOfficer,
+    required this.onSendToModerator,
+    required this.onModeratorReturn,
+    required this.onSendBackToLecturer,
+    required this.onSchedule,
+    required this.onRelease,
+  });
+
+  final ExamWorkflowItem item;
+  final bool busy;
+  final VoidCallback onSubmitToOfficer;
+  final VoidCallback onSendToModerator;
+  final VoidCallback onModeratorReturn;
+  final VoidCallback onSendBackToLecturer;
+  final VoidCallback onSchedule;
+  final VoidCallback onRelease;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = exam.readiness == 'Ready'
-        ? scheme.primary
-        : exam.readiness == 'Needs Attention'
-        ? scheme.error
-        : scheme.secondary;
+    final statusColor = _statusColor(scheme, item.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: exam.readiness == 'Needs Attention'
-              ? scheme.error.withValues(alpha: 0.4)
-              : scheme.outlineVariant,
-        ),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
             spacing: 12,
-            runSpacing: 8,
+            runSpacing: 10,
             alignment: WrapAlignment.spaceBetween,
             children: [
               ConstrainedBox(
@@ -264,18 +436,18 @@ class _ExamPlanTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${exam.courseCode} • ${exam.title}',
+                      item.title,
                       style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${exam.mode} • ${exam.dateTime} • ${exam.venue}',
+                      item.courseLabel.isEmpty ? 'Course not shown' : item.courseLabel,
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
-              _StatusBadge(text: exam.readiness, color: statusColor),
+              _StatusBadge(text: item.statusLabel, color: statusColor),
             ],
           ),
           const SizedBox(height: 10),
@@ -283,85 +455,124 @@ class _ExamPlanTile extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _MiniPill(label: '${exam.candidates} candidates'),
-              _MiniPill(label: '${exam.invigilators} invigilators'),
-              _MiniPill(label: exam.questionStatus),
-              _MiniPill(label: '${exam.incidentCount} incidents'),
+              _MiniPill(label: item.deliveryLabel),
+              _MiniPill(label: item.scheduleLabel),
+              _MiniPill(label: '${item.durationMinutes} minutes'),
+              _MiniPill(label: '${item.questionCount} questions'),
+              if (item.venue.isNotEmpty) _MiniPill(label: item.venue),
             ],
           ),
+          if (item.questionTypes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: item.questionTypes
+                  .map((type) => _MiniPill(label: _humanLabel(type)))
+                  .toList(),
+            ),
+          ],
+          if (item.workflowNotes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Review notes',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            for (final note in item.workflowNotes.take(4))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '${note.actionLabel}: ${note.comment.isEmpty ? 'No note added' : note.comment}',
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                ),
+              ),
+          ],
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.rule_folder_outlined),
-                label: const Text('Questions'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.meeting_room_outlined),
-                label: const Text('Hall setup'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.person_add_alt_1_outlined),
-                label: const Text('Invigilators'),
-              ),
-              FilledButton.icon(
-                onPressed: exam.readiness == 'Ready' ? () {} : null,
-                icon: const Icon(Icons.play_circle_outline),
-                label: const Text('Open exam'),
-              ),
-            ],
-          ),
+          if (busy)
+            const LinearProgressIndicator()
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (item.status == 'draft' || item.status == 'lecturer_correction')
+                  OutlinedButton.icon(
+                    onPressed: onSubmitToOfficer,
+                    icon: const Icon(Icons.outbox_outlined),
+                    label: const Text('Submit to Exam Officer'),
+                  ),
+                if (item.status == 'officer_review')
+                  FilledButton.icon(
+                    onPressed: onSendToModerator,
+                    icon: const Icon(Icons.forward_to_inbox_outlined),
+                    label: const Text('Send to Moderator'),
+                  ),
+                if (item.status == 'moderator_review')
+                  FilledButton.icon(
+                    onPressed: onModeratorReturn,
+                    icon: const Icon(Icons.assignment_return_outlined),
+                    label: const Text('Return with Notes'),
+                  ),
+                if (item.status == 'moderated' || item.status == 'officer_review')
+                  OutlinedButton.icon(
+                    onPressed: onSendBackToLecturer,
+                    icon: const Icon(Icons.reply_all_outlined),
+                    label: const Text('Send Back to Lecturer'),
+                  ),
+                if (item.status == 'moderated' || item.status == 'officer_review' || item.status == 'lecturer_correction')
+                  FilledButton.icon(
+                    onPressed: onSchedule,
+                    icon: const Icon(Icons.event_available_outlined),
+                    label: const Text('Schedule Exam'),
+                  ),
+                if (item.status == 'scheduled')
+                  FilledButton.icon(
+                    onPressed: onRelease,
+                    icon: const Icon(Icons.play_circle_outline),
+                    label: const Text('Release to Students'),
+                  ),
+              ],
+            ),
         ],
       ),
     );
   }
-}
 
-class _IncidentTile extends StatelessWidget {
-  const _IncidentTile({required this.incident});
-
-  final _ExamIncident incident;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final severityColor = incident.severity == 'High'
-        ? scheme.error
-        : incident.severity == 'Medium'
-        ? scheme.secondary
-        : scheme.primary;
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: severityColor.withValues(alpha: 0.12),
-        foregroundColor: severityColor,
-        child: const Icon(Icons.report_problem_outlined),
-      ),
-      title: Text(
-        '${incident.exam} • ${incident.report}',
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text('${incident.owner} • ${incident.time}'),
-      trailing: _StatusBadge(text: incident.severity, color: severityColor),
-    );
+  Color _statusColor(ColorScheme scheme, String status) {
+    switch (status) {
+      case 'released':
+      case 'scheduled':
+        return scheme.primary;
+      case 'moderator_review':
+      case 'lecturer_correction':
+        return scheme.secondary;
+      case 'cancelled':
+        return scheme.error;
+      default:
+        return scheme.tertiary;
+    }
   }
 }
 
-class _ExamChip extends StatelessWidget {
-  const _ExamChip({required this.label, required this.icon});
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
 
   final String label;
-  final IconData icon;
+  final bool selected;
+  final VoidCallback onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Chip(avatar: Icon(icon, size: 18), label: Text(label));
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+    );
   }
 }
 
@@ -410,44 +621,46 @@ class _MiniPill extends StatelessWidget {
   }
 }
 
-class _ExamPlan {
-  const _ExamPlan({
-    required this.courseCode,
-    required this.title,
-    required this.mode,
-    required this.dateTime,
-    required this.venue,
-    required this.candidates,
-    required this.invigilators,
-    required this.questionStatus,
-    required this.readiness,
-    required this.incidentCount,
-  });
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.message, required this.onRetry});
 
-  final String courseCode;
-  final String title;
-  final String mode;
-  final String dateTime;
-  final String venue;
-  final int candidates;
-  final int invigilators;
-  final String questionStatus;
-  final String readiness;
-  final int incidentCount;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Could not load exams', style: TextStyle(color: scheme.onErrorContainer, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          Text(message, style: TextStyle(color: scheme.onErrorContainer)),
+          const SizedBox(height: 10),
+          FilledButton(onPressed: onRetry, child: const Text('Try again')),
+        ],
+      ),
+    );
+  }
 }
 
-class _ExamIncident {
-  const _ExamIncident({
-    required this.exam,
-    required this.report,
-    required this.severity,
-    required this.owner,
-    required this.time,
-  });
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox();
 
-  final String exam;
-  final String report;
-  final String severity;
-  final String owner;
-  final String time;
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(24),
+      child: Center(
+        child: Text('No exams found for this view.'),
+      ),
+    );
+  }
 }
