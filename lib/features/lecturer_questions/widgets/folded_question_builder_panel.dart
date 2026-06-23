@@ -1275,15 +1275,17 @@ class _FieldsForFormat extends StatelessWidget {
                               onChanged();
                             },
                           )
-                        : Radio<String>(
-                            value: item.options[i].keyName,
-                            groupValue: item.singleCorrect,
-                            onChanged: (v) {
-                              item.setSingleCorrect(
-                                v ?? item.options[i].keyName,
-                              );
+                        : IconButton(
+                            tooltip: 'Mark as correct',
+                            onPressed: () {
+                              item.setSingleCorrect(item.options[i].keyName);
                               onChanged();
                             },
+                            icon: Icon(
+                              item.singleCorrect == item.options[i].keyName
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                            ),
                           ),
                   ),
                   SizedBox(
@@ -2218,10 +2220,12 @@ class _QuestionDraft {
     } else {
       payload['marking_guide'] = answer;
     }
-    if (type == 'image_question')
+    if (type == 'image_question') {
       payload['allowed_file_types'] = ['jpg', 'jpeg', 'png'];
-    if (type == 'file_upload')
+    }
+    if (type == 'file_upload') {
       payload['allowed_file_types'] = ['pdf', 'docx', 'zip', 'jpg', 'png'];
+    }
     return payload;
   }
 
@@ -2229,8 +2233,9 @@ class _QuestionDraft {
     final out = <Map<String, String>>[];
     for (final raw in value.split(';')) {
       final parts = raw.split('=');
-      if (parts.length == 2)
+      if (parts.length == 2) {
         out.add({'left': parts[0].trim(), 'right': parts[1].trim()});
+      }
     }
     return out;
   }
