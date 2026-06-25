@@ -210,6 +210,9 @@ String _workspaceTitleForRole(AdminRole role) {
   if (role == AdminRole.moderator) {
     return 'Moderator';
   }
+  if (role == AdminRole.moderator) {
+    return 'Moderator';
+  }
   if (role == AdminRole.levelAdviser) {
     return 'Level Adviser Workspace';
   }
@@ -244,6 +247,9 @@ String _workspaceSubtitleForRole(AdminRole role) {
   if (role == AdminRole.moderator) {
     return 'Question review and quality checks';
   }
+  if (role == AdminRole.moderator) {
+    return 'Question review and quality checks';
+  }
   if (role == AdminRole.levelAdviser) {
     return 'Assigned level student monitoring';
   }
@@ -274,6 +280,9 @@ IconData _workspaceIconForRole(AdminRole role) {
   }
   if (role == AdminRole.lecturer) {
     return Icons.school_outlined;
+  }
+  if (role == AdminRole.moderator) {
+    return Icons.rule_folder_outlined;
   }
   if (role == AdminRole.moderator) {
     return Icons.rule_folder_outlined;
