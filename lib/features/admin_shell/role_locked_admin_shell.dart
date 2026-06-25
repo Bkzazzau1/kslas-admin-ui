@@ -5,6 +5,7 @@ import '../../models/admin_role.dart';
 import '../lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
 import '../live_dashboard/widgets/live_dashboard_panel.dart';
 import '../live_dashboard/widgets/notification_bell.dart';
+import '../review_evidence/widgets/review_evidence_panel.dart';
 import '../role_dashboard/widgets/role_dashboard_panel.dart';
 import '../role_dashboard/widgets/workflow_forms_panel.dart';
 import '../staff_management/widgets/staff_management_panel.dart';
@@ -132,157 +133,165 @@ List<_LockedPage> _pagesForRole(String role, ValueChanged<String> onOpenPage) {
   }
 }
 
+_LockedPage _reviewEvidencePage() => _LockedPage(
+      'Review Evidence',
+      Icons.folder_copy_outlined,
+      (_) => const _PanelHost(child: ReviewEvidencePanel()),
+    );
+
 List<_LockedPage> _adminPages(String role, ValueChanged<String> onOpenPage) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'Staff management',
-    Icons.badge_outlined,
-    (_) => const _PanelHost(child: StaffManagementPanel()),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.admin_panel_settings_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Smart forms',
-    Icons.dynamic_form_outlined,
-    (_) => const _PanelHost(child: WorkflowFormsPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live workflow',
-    Icons.account_tree_outlined,
-    (_) => const _PanelHost(child: WorkflowLivePanel()),
-  ),
-  _LockedPage(
-    'Live questions',
-    Icons.cloud_done_outlined,
-    (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
-  ),
-  _LockedPage(
-    'Full console',
-    Icons.dashboard_customize_outlined,
-    (_) => const AdminOperationsShell(),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'Staff management',
+        Icons.badge_outlined,
+        (_) => const _PanelHost(child: StaffManagementPanel()),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.admin_panel_settings_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _LockedPage(
+        'Smart forms',
+        Icons.dynamic_form_outlined,
+        (_) => const _PanelHost(child: WorkflowFormsPanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+      _reviewEvidencePage(),
+      _LockedPage(
+        'Live workflow',
+        Icons.account_tree_outlined,
+        (_) => const _PanelHost(child: WorkflowLivePanel()),
+      ),
+      _LockedPage(
+        'Live questions',
+        Icons.cloud_done_outlined,
+        (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
+      ),
+      _LockedPage(
+        'Full console',
+        Icons.dashboard_customize_outlined,
+        (_) => const AdminOperationsShell(),
+      ),
+    ];
 
 List<_LockedPage> _hodPages(String role, ValueChanged<String> onOpenPage) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'Staff management',
-    Icons.badge_outlined,
-    (_) => const _PanelHost(child: StaffManagementPanel()),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.account_tree_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live workflow',
-    Icons.account_tree_outlined,
-    (_) => const _PanelHost(child: WorkflowLivePanel()),
-  ),
-  _LockedPage(
-    'Live questions',
-    Icons.cloud_done_outlined,
-    (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'Staff management',
+        Icons.badge_outlined,
+        (_) => const _PanelHost(child: StaffManagementPanel()),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.account_tree_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+      _reviewEvidencePage(),
+      _LockedPage(
+        'Live workflow',
+        Icons.account_tree_outlined,
+        (_) => const _PanelHost(child: WorkflowLivePanel()),
+      ),
+      _LockedPage(
+        'Live questions',
+        Icons.cloud_done_outlined,
+        (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
+      ),
+    ];
 
 List<_LockedPage> _lecturerPages(
   String role,
   ValueChanged<String> onOpenPage,
 ) => [
-  _LockedPage(
-    'Full console',
-    Icons.dashboard_customize_outlined,
-    (_) => const AdminOperationsShell(initialRole: AdminRole.lecturer),
-  ),
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.school_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-];
+      _LockedPage(
+        'Full console',
+        Icons.dashboard_customize_outlined,
+        (_) => const AdminOperationsShell(initialRole: AdminRole.lecturer),
+      ),
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.school_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+    ];
 
 List<_LockedPage> _examOfficerPages(
   String role,
   ValueChanged<String> onOpenPage,
 ) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.assignment_turned_in_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live workflow',
-    Icons.account_tree_outlined,
-    (_) => const _PanelHost(child: WorkflowLivePanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.assignment_turned_in_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _reviewEvidencePage(),
+      _LockedPage(
+        'Live workflow',
+        Icons.account_tree_outlined,
+        (_) => const _PanelHost(child: WorkflowLivePanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+    ];
 
 List<_LockedPage> _moderatorPages(
   String role,
   ValueChanged<String> onOpenPage,
 ) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.rule_folder_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.rule_folder_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+    ];
 
-List<_LockedPage> _recordsPages(String role, ValueChanged<String> onOpenPage) =>
-    [
+List<_LockedPage> _recordsPages(String role, ValueChanged<String> onOpenPage) => [
       _LockedPage(
         'Command center',
         Icons.space_dashboard_outlined,
@@ -293,6 +302,7 @@ List<_LockedPage> _recordsPages(String role, ValueChanged<String> onOpenPage) =>
         Icons.badge_outlined,
         (_) => const _PanelHost(child: RoleDashboardPanel()),
       ),
+      _reviewEvidencePage(),
       _LockedPage(
         'Live dashboard',
         Icons.insights_outlined,
@@ -304,43 +314,44 @@ List<_LockedPage> _levelAdviserPages(
   String role,
   ValueChanged<String> onOpenPage,
 ) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.person_search_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.person_search_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+    ];
 
 List<_LockedPage> _invigilatorPages(
   String role,
   ValueChanged<String> onOpenPage,
 ) => [
-  _LockedPage(
-    'Command center',
-    Icons.space_dashboard_outlined,
-    (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-  ),
-  _LockedPage(
-    'My role',
-    Icons.verified_user_outlined,
-    (_) => const _PanelHost(child: RoleDashboardPanel()),
-  ),
-  _LockedPage(
-    'Live dashboard',
-    Icons.insights_outlined,
-    (_) => const _PanelHost(child: LiveDashboardPanel()),
-  ),
-];
+      _LockedPage(
+        'Command center',
+        Icons.space_dashboard_outlined,
+        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
+      ),
+      _LockedPage(
+        'My role',
+        Icons.verified_user_outlined,
+        (_) => const _PanelHost(child: RoleDashboardPanel()),
+      ),
+      _reviewEvidencePage(),
+      _LockedPage(
+        'Live dashboard',
+        Icons.insights_outlined,
+        (_) => const _PanelHost(child: LiveDashboardPanel()),
+      ),
+    ];
 
 String _titleForRole(String role) {
   switch (role) {
