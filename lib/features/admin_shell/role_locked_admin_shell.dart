@@ -2,16 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/auth/auth_session.dart';
 import '../../models/admin_role.dart';
-import '../lecturer_assessments/widgets/lecturer_assessment_live_panel.dart';
-import '../live_dashboard/widgets/live_dashboard_panel.dart';
-import '../live_dashboard/widgets/notification_bell.dart';
-import '../review_evidence/widgets/review_evidence_panel.dart';
-import '../role_dashboard/widgets/role_dashboard_panel.dart';
-import '../role_dashboard/widgets/workflow_forms_panel.dart';
-import '../staff_management/widgets/staff_management_panel.dart';
-import '../workflow/widgets/workflow_live_panel.dart';
 import 'admin_operations_shell.dart';
-import 'command_center_page.dart';
 
 class RoleLockedAdminShell extends StatefulWidget {
   const RoleLockedAdminShell({super.key});
@@ -21,575 +12,57 @@ class RoleLockedAdminShell extends StatefulWidget {
 }
 
 class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
-  int _selectedIndex = 0;
-
   StaffSession? get _session => AuthSession.instance.session;
 
-  String get _role {
+  @override
+  Widget build(BuildContext context) {
+    return AdminOperationsShell(initialRole: _adminRoleFromSession(), lockRole: true);
+  }
+
+  AdminRole _adminRoleFromSession() {
     final session = _session;
-    if (session == null) return 'lecturer';
-    if (session.primaryRole.isNotEmpty) {
-      return session.primaryRole.toLowerCase();
+    final rawRole = session?.primaryRole.isNotEmpty == true
+        ? session!.primaryRole
+        : (session?.roles.isNotEmpty == true ? session!.roles.first : 'lecturer');
+    final role = rawRole.toLowerCase().trim();
+
+    switch (role) {
+      case 'admin':
+      case 'super_admin':
+      case 'superadmin':
+      case 'system_admin':
+        return AdminRole.superAdmin;
+      case 'dlc_director':
+      case 'dlc director':
+        return AdminRole.dlcDirector;
+      case 'hod':
+      case 'head_of_department':
+        return AdminRole.hod;
+      case 'exam_officer':
+      case 'exam officer':
+      case 'departmental_exam_officer':
+        return AdminRole.examOfficer;
+      case 'moderator':
+        return AdminRole.moderator;
+      case 'invigilator':
+        return AdminRole.invigilator;
+      case 'academic_records':
+      case 'records_department':
+      case 'academic records':
+        return AdminRole.recordsDepartment;
+      case 'level_adviser':
+      case 'level adviser':
+      case 'level_coordinator':
+        return AdminRole.levelAdviser;
+      case 'support':
+      case 'support_team':
+        return AdminRole.supportTeam;
+      case 'reports':
+      case 'reports_team':
+        return AdminRole.reportsTeam;
+      case 'lecturer':
+      default:
+        return AdminRole.lecturer;
     }
-    if (session.roles.isNotEmpty) return session.roles.first.toLowerCase();
-    return 'lecturer';
   }
-
-  List<_LockedPage> get _pages => _pagesForRole(_role, _openPageByLabel);
-
-  @override
-  Widget build(BuildContext context) {
-    if (_role == 'lecturer') {
-      return const AdminOperationsShell(
-        initialRole: AdminRole.lecturer,
-        lockRole: true,
-      );
-    }
-
-    if (_role == 'exam_officer') {
-      return const AdminOperationsShell(
-        initialRole: AdminRole.examOfficer,
-        lockRole: true,
-      );
-    }
-
-    if (_role == 'moderator') {
-      return const AdminOperationsShell(
-        initialRole: AdminRole.moderator,
-        lockRole: true,
-      );
-    }
-
-    final compact = MediaQuery.sizeOf(context).width < 860;
-    final pages = _pages;
-    final safeIndex = _selectedIndex >= pages.length ? 0 : _selectedIndex;
-    final page = pages[safeIndex];
-
-    return Scaffold(
-      appBar: compact
-          ? AppBar(
-              title: Text(_titleForRole(_role)),
-              actions: const [NotificationBell(), SizedBox(width: 8)],
-            )
-          : null,
-      drawer: compact
-          ? _LockedDrawer(
-              pages: pages,
-              selectedIndex: safeIndex,
-              onChanged: _selectPage,
-            )
-          : null,
-      body: Row(
-        children: [
-          if (!compact)
-            _LockedSideBar(
-              session: _session,
-              role: _role,
-              pages: pages,
-              selectedIndex: safeIndex,
-              onChanged: _selectPage,
-            ),
-          Expanded(child: page.builder(context)),
-        ],
-      ),
-      bottomNavigationBar: compact
-          ? NavigationBar(
-              selectedIndex: safeIndex > 4 ? 4 : safeIndex,
-              onDestinationSelected: _selectPage,
-              destinations: [
-                for (final item in pages.take(5))
-                  NavigationDestination(
-                    icon: Icon(item.icon),
-                    label: item.label,
-                  ),
-              ],
-            )
-          : null,
-    );
-  }
-
-  void _selectPage(int value) {
-    setState(() => _selectedIndex = value);
-  }
-
-  void _openPageByLabel(String label) {
-    final pages = _pages;
-    final index = pages.indexWhere((page) => page.label == label);
-    if (index >= 0) _selectPage(index);
-  }
-}
-
-List<_LockedPage> _pagesForRole(String role, ValueChanged<String> onOpenPage) {
-  switch (role) {
-    case 'admin':
-    case 'super_admin':
-    case 'superadmin':
-    case 'system_admin':
-    case 'dlc_director':
-      return _adminPages(role, onOpenPage);
-    case 'hod':
-      return _hodPages(role, onOpenPage);
-    case 'exam_officer':
-      return _examOfficerPages(role, onOpenPage);
-    case 'moderator':
-      return _moderatorPages(role, onOpenPage);
-    case 'lecturer':
-      return _lecturerPages(role, onOpenPage);
-    case 'academic_records':
-    case 'records_department':
-      return _recordsPages(role, onOpenPage);
-    case 'level_adviser':
-      return _levelAdviserPages(role, onOpenPage);
-    case 'invigilator':
-      return _invigilatorPages(role, onOpenPage);
-    default:
-      return _lecturerPages(role, onOpenPage);
-  }
-}
-
-_LockedPage _reviewEvidencePage() => _LockedPage(
-      'Review Evidence',
-      Icons.folder_copy_outlined,
-      (_) => const _PanelHost(child: ReviewEvidencePanel()),
-    );
-
-List<_LockedPage> _adminPages(String role, ValueChanged<String> onOpenPage) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'Staff management',
-        Icons.badge_outlined,
-        (_) => const _PanelHost(child: StaffManagementPanel()),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.admin_panel_settings_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _LockedPage(
-        'Smart forms',
-        Icons.dynamic_form_outlined,
-        (_) => const _PanelHost(child: WorkflowFormsPanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-      _reviewEvidencePage(),
-      _LockedPage(
-        'Live workflow',
-        Icons.account_tree_outlined,
-        (_) => const _PanelHost(child: WorkflowLivePanel()),
-      ),
-      _LockedPage(
-        'Live questions',
-        Icons.cloud_done_outlined,
-        (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
-      ),
-      _LockedPage(
-        'Full console',
-        Icons.dashboard_customize_outlined,
-        (_) => const AdminOperationsShell(),
-      ),
-    ];
-
-List<_LockedPage> _hodPages(String role, ValueChanged<String> onOpenPage) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'Staff management',
-        Icons.badge_outlined,
-        (_) => const _PanelHost(child: StaffManagementPanel()),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.account_tree_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-      _reviewEvidencePage(),
-      _LockedPage(
-        'Live workflow',
-        Icons.account_tree_outlined,
-        (_) => const _PanelHost(child: WorkflowLivePanel()),
-      ),
-      _LockedPage(
-        'Live questions',
-        Icons.cloud_done_outlined,
-        (_) => const _PanelHost(child: LecturerAssessmentLivePanel()),
-      ),
-    ];
-
-List<_LockedPage> _lecturerPages(
-  String role,
-  ValueChanged<String> onOpenPage,
-) => [
-      _LockedPage(
-        'Full console',
-        Icons.dashboard_customize_outlined,
-        (_) => const AdminOperationsShell(initialRole: AdminRole.lecturer),
-      ),
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.school_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-List<_LockedPage> _examOfficerPages(
-  String role,
-  ValueChanged<String> onOpenPage,
-) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.assignment_turned_in_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _reviewEvidencePage(),
-      _LockedPage(
-        'Live workflow',
-        Icons.account_tree_outlined,
-        (_) => const _PanelHost(child: WorkflowLivePanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-List<_LockedPage> _moderatorPages(
-  String role,
-  ValueChanged<String> onOpenPage,
-) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.rule_folder_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-List<_LockedPage> _recordsPages(String role, ValueChanged<String> onOpenPage) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.badge_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _reviewEvidencePage(),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-List<_LockedPage> _levelAdviserPages(
-  String role,
-  ValueChanged<String> onOpenPage,
-) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.person_search_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-List<_LockedPage> _invigilatorPages(
-  String role,
-  ValueChanged<String> onOpenPage,
-) => [
-      _LockedPage(
-        'Command center',
-        Icons.space_dashboard_outlined,
-        (_) => CommandCenterPage(role: role, onOpenPage: onOpenPage),
-      ),
-      _LockedPage(
-        'My role',
-        Icons.verified_user_outlined,
-        (_) => const _PanelHost(child: RoleDashboardPanel()),
-      ),
-      _reviewEvidencePage(),
-      _LockedPage(
-        'Live dashboard',
-        Icons.insights_outlined,
-        (_) => const _PanelHost(child: LiveDashboardPanel()),
-      ),
-    ];
-
-String _titleForRole(String role) {
-  switch (role) {
-    case 'admin':
-    case 'super_admin':
-    case 'superadmin':
-    case 'system_admin':
-      return 'K-SLAS Admin';
-    case 'dlc_director':
-      return 'DLC Director';
-    case 'hod':
-      return 'HoD Workspace';
-    case 'exam_officer':
-      return 'Exam Officer';
-    case 'moderator':
-      return 'Moderator';
-    case 'lecturer':
-      return 'Lecturer Workspace';
-    case 'academic_records':
-    case 'records_department':
-      return 'Academic Records';
-    case 'level_adviser':
-      return 'Level Adviser';
-    case 'invigilator':
-      return 'Invigilator';
-    default:
-      return 'Staff Workspace';
-  }
-}
-
-String _subtitleForRole(String role) {
-  switch (role) {
-    case 'admin':
-    case 'super_admin':
-    case 'superadmin':
-    case 'system_admin':
-    case 'dlc_director':
-      return 'Institution-wide administration and monitoring';
-    case 'hod':
-      return 'Department academic supervision and approvals';
-    case 'exam_officer':
-      return 'Departmental examination workflow';
-    case 'moderator':
-      return 'Question review and quality checks';
-    case 'lecturer':
-      return 'Assigned course delivery and submissions';
-    case 'academic_records':
-    case 'records_department':
-      return 'Official academic records workspace';
-    case 'level_adviser':
-      return 'Assigned level student monitoring';
-    case 'invigilator':
-      return 'Exam attendance and monitoring support';
-    default:
-      return 'Role-based staff workspace';
-  }
-}
-
-class _LockedSideBar extends StatelessWidget {
-  const _LockedSideBar({
-    required this.session,
-    required this.role,
-    required this.pages,
-    required this.selectedIndex,
-    required this.onChanged,
-  });
-
-  final StaffSession? session;
-  final String role;
-  final List<_LockedPage> pages;
-  final int selectedIndex;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 310,
-      color: scheme.surfaceContainerLow,
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
-          children: [
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-                child: Icon(pages.first.icon),
-              ),
-              title: Text(
-                _titleForRole(role),
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-              subtitle: Text(_subtitleForRole(role)),
-            ),
-            const SizedBox(height: 10),
-            _SignedInCard(session: session),
-            const SizedBox(height: 16),
-            for (var index = 0; index < pages.length; index++)
-              ListTile(
-                selected: selectedIndex == index,
-                selectedTileColor: scheme.primaryContainer,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                leading: Icon(pages[index].icon),
-                title: Text(pages[index].label),
-                onTap: () => onChanged(index),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SignedInCard extends StatelessWidget {
-  const _SignedInCard({required this.session});
-
-  final StaffSession? session;
-
-  @override
-  Widget build(BuildContext context) {
-    final current = session;
-    if (current == null) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: scheme.surface,
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          const NotificationBell(),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  current.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  current.primaryRole.isEmpty ? 'Staff' : current.primaryRole,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: AuthSession.instance.signOut,
-            icon: const Icon(Icons.logout_outlined),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LockedDrawer extends StatelessWidget {
-  const _LockedDrawer({
-    required this.pages,
-    required this.selectedIndex,
-    required this.onChanged,
-  });
-
-  final List<_LockedPage> pages;
-  final int selectedIndex;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('My workspace', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            for (var index = 0; index < pages.length; index++)
-              ListTile(
-                selected: selectedIndex == index,
-                leading: Icon(pages[index].icon),
-                title: Text(pages[index].label),
-                onTap: () {
-                  onChanged(index);
-                  Navigator.of(context).maybePop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PanelHost extends StatelessWidget {
-  const _PanelHost({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(18),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _LockedPage {
-  const _LockedPage(this.label, this.icon, this.builder);
-
-  final String label;
-  final IconData icon;
-  final WidgetBuilder builder;
 }
