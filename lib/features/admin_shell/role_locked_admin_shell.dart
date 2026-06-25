@@ -46,6 +46,20 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
       );
     }
 
+    if (_role == 'exam_officer') {
+      return const AdminOperationsShell(
+        initialRole: AdminRole.examOfficer,
+        lockRole: true,
+      );
+    }
+
+    if (_role == 'moderator') {
+      return const AdminOperationsShell(
+        initialRole: AdminRole.moderator,
+        lockRole: true,
+      );
+    }
+
     final compact = MediaQuery.sizeOf(context).width < 860;
     final pages = _pages;
     final safeIndex = _selectedIndex >= pages.length ? 0 : _selectedIndex;
