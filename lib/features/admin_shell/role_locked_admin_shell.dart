@@ -16,14 +16,19 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    return AdminOperationsShell(initialRole: _adminRoleFromSession(), lockRole: true);
+    return AdminOperationsShell(
+      initialRole: _adminRoleFromSession(),
+      lockRole: true,
+    );
   }
 
   AdminRole _adminRoleFromSession() {
     final session = _session;
     final rawRole = session?.primaryRole.isNotEmpty == true
         ? session!.primaryRole
-        : (session?.roles.isNotEmpty == true ? session!.roles.first : 'lecturer');
+        : (session?.roles.isNotEmpty == true
+              ? session!.roles.first
+              : 'lecturer');
     final role = rawRole.toLowerCase().trim();
 
     switch (role) {
@@ -45,6 +50,7 @@ class _RoleLockedAdminShellState extends State<RoleLockedAdminShell> {
       case 'moderator':
         return AdminRole.moderator;
       case 'invigilator':
+      case 'proctor':
         return AdminRole.invigilator;
       case 'academic_records':
       case 'records_department':
