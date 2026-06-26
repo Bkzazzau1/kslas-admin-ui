@@ -1,123 +1,383 @@
 import 'package:flutter/material.dart';
 
-class ReviewEvidencePanel extends StatelessWidget {
+import '../../../core/auth/auth_session.dart';
+import '../data/review_evidence_api.dart';
+
+class ReviewEvidencePanel extends StatefulWidget {
   const ReviewEvidencePanel({super.key});
 
-  static final List<_ReviewCase> _cases = <_ReviewCase>[
-    _ReviewCase(
-      studentName: 'Aisha Musa',
-      matricNumber: 'KASU/DLC/24/0192',
-      course: 'GST 102 - Use of English II',
-      attentionLevel: 'High attention required',
-      status: 'Awaiting exam officer review',
-      reviewSummary:
-          'Camera and room sound records are available for review. The student remained connected and submitted normally.',
-      evidenceFiles: const <_EvidenceFile>[
-        _EvidenceFile(
-          title: 'Camera review record',
-          type: 'Camera evidence',
-          source: 'local_camera_record',
-          status: 'Available',
-          detail: 'Recent frame saved around the review event.',
-        ),
-        _EvidenceFile(
-          title: 'Room sound record',
-          type: 'Sound evidence',
-          source: 'local_audio_record',
-          status: 'Available',
-          detail: 'Short sound clip saved around the review event.',
-        ),
-      ],
-      timeline: const <String>[
-        'Another person may be visible in the camera view.',
-        'Possible external voice noticed during the exam.',
-        'Evidence records saved for review.',
-      ],
-    ),
-    _ReviewCase(
-      studentName: 'Ibrahim Sani',
-      matricNumber: 'KASU/DLC/24/0237',
-      course: 'CSC 204 - Data Structures',
-      attentionLevel: 'Medium attention required',
-      status: 'Invigilator note added',
-      reviewSummary:
-          'Screen activity and camera records need a quick human check before the case is cleared.',
-      evidenceFiles: const <_EvidenceFile>[
-        _EvidenceFile(
-          title: 'Camera review record',
-          type: 'Camera evidence',
-          source: 'local_camera_record',
-          status: 'Available',
-          detail: 'Lighting and face visibility record saved.',
-        ),
-        _EvidenceFile(
-          title: 'Attempt recovery record',
-          type: 'Autosave recovery',
-          source: 'recovered_from',
-          status: 'Primary record used',
-          detail: 'Checksum verified during attempt recovery.',
-        ),
-      ],
-      timeline: const <String>[
-        'Student left the exam screen briefly.',
-        'Camera view required attention.',
-        'Attempt autosave checksum verified.',
-      ],
-    ),
-  ];
+  @override
+  State<ReviewEvidencePanel> createState() => _ReviewEvidencePanelState();
+}
+
+class _ReviewEvidencePanelState extends State<ReviewEvidencePanel> {
+  late final ReviewEvidenceApi _api;
+  final TextEditingController _courseFilterController = TextEditingController();
+  final TextEditingController _attemptFilterController = TextEditingController();
+
+  List<ReviewEvidenceCase> _cases = const <ReviewEvidenceCase>[];
+  bool _loading = true;
+  String? _error;
+  String _statusFilter = 'all';
+  String _attentionFilter = 'all';
+  String? _busyCaseId;
+  String? _busyAction;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ReviewEvidenceApi();
+    _loadCases();
+  }
+
+  @override
+  void dispose() {
+    _courseFilterController.dispose();
+    _attemptFilterController.dispose();
+    _api.close();
+    super.dispose();
+  }
+
+  Future<void> _loadCases() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final cases = await _api.listCases(
+        status: _statusFilter,
+        attentionLevel: _attentionFilter,
+        assignedRole: _roleFilter,
+        courseCode: _courseFilterController.text,
+        attemptId: _attemptFilterController.text,
+      );
+      if (!mounted) return;
+      setState(() {
+        _cases = cases;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  String? get _roleFilter {
+    final role = AuthSession.instance.session?.primaryRole.trim().toLowerCase() ?? '';
+    if (role.isEmpty || role == 'admin' || role == 'super_admin' || role == 'superadmin' || role == 'system_admin' || role == 'dlc_director') {
+      return null;
+    }
+    return role;
+  }
+
+  Future<void> _takeAction(ReviewEvidenceCase item, String action) async {
+    final comment = await _commentDialog(action: action, item: item);
+    if (comment == null) return;
+
+    setState(() {
+      _busyCaseId = item.id;
+      _busyAction = action;
+      _error = null;
+    });
+
+    try {
+      final session = AuthSession.instance.session;
+      final updated = await _api.takeAction(
+        caseId: item.id,
+        action: action,
+        actorId: session?.staffId,
+        actorRole: session?.primaryRole,
+        comment: comment,
+      );
+      if (!mounted) return;
+      setState(() {
+        final index = _cases.indexWhere((candidate) => candidate.id == item.id);
+        if (index >= 0) {
+          final copy = List<ReviewEvidenceCase>.from(_cases);
+          copy[index] = updated;
+          _cases = copy;
+        }
+        _busyCaseId = null;
+        _busyAction = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _busyCaseId = null;
+        _busyAction = null;
+      });
+    }
+  }
+
+  Future<String?> _commentDialog({
+    required String action,
+    required ReviewEvidenceCase item,
+  }) async {
+    final controller = TextEditingController();
+    final label = reviewLabel(action);
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(label),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.studentLabel),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Reviewer comment',
+                  hintText: 'Add the reason for this review action.',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Save action'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final waiting = _cases.where((item) => item.status == 'awaiting_review').length;
+    final evidenceCount = _cases.fold<int>(0, (sum, item) => sum + item.evidenceFiles.length);
+    final cleared = _cases.where((item) => item.status == 'cleared' || item.status == 'marked_incorrect_alert').length;
+    final sentToHod = _cases.where((item) => item.status == 'sent_to_hod').length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Review Evidence',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Evidence files and activity records for sessions that may need human review.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Review Evidence',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Evidence files, activity timelines, and human review actions for sessions that need attention.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: _loading ? null : _loadCases,
+              icon: const Icon(Icons.refresh_outlined),
+              label: const Text('Refresh'),
+            ),
+          ],
         ),
         const SizedBox(height: 18),
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: const [
+          children: [
             _SummaryCard(
               title: 'Cases waiting',
-              value: '12',
+              value: '$waiting',
               icon: Icons.fact_check_outlined,
             ),
             _SummaryCard(
               title: 'Evidence files',
-              value: '36',
+              value: '$evidenceCount',
               icon: Icons.folder_copy_outlined,
             ),
             _SummaryCard(
-              title: 'Cleared today',
-              value: '8',
+              title: 'Cleared cases',
+              value: '$cleared',
               icon: Icons.verified_outlined,
             ),
             _SummaryCard(
               title: 'Sent to HoD',
-              value: '3',
+              value: '$sentToHod',
               icon: Icons.account_tree_outlined,
             ),
           ],
         ),
         const SizedBox(height: 18),
-        for (final item in _cases) ...[
-          _ReviewCaseCard(item: item),
+        _FilterBar(
+          status: _statusFilter,
+          attentionLevel: _attentionFilter,
+          courseController: _courseFilterController,
+          attemptController: _attemptFilterController,
+          onStatusChanged: (value) {
+            setState(() => _statusFilter = value ?? 'all');
+            _loadCases();
+          },
+          onAttentionChanged: (value) {
+            setState(() => _attentionFilter = value ?? 'all');
+            _loadCases();
+          },
+          onApply: _loadCases,
+          onClear: () {
+            setState(() {
+              _statusFilter = 'all';
+              _attentionFilter = 'all';
+              _courseFilterController.clear();
+              _attemptFilterController.clear();
+            });
+            _loadCases();
+          },
+        ),
+        if (_error != null) ...[
           const SizedBox(height: 14),
+          _ErrorBanner(message: _error!, onRetry: _loadCases),
         ],
+        const SizedBox(height: 18),
+        if (_loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_cases.isEmpty)
+          const _EmptyState()
+        else
+          for (final item in _cases) ...[
+            _ReviewCaseCard(
+              item: item,
+              busyAction: _busyCaseId == item.id ? _busyAction : null,
+              onAction: (action) => _takeAction(item, action),
+            ),
+            const SizedBox(height: 14),
+          ],
       ],
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.status,
+    required this.attentionLevel,
+    required this.courseController,
+    required this.attemptController,
+    required this.onStatusChanged,
+    required this.onAttentionChanged,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  final String status;
+  final String attentionLevel;
+  final TextEditingController courseController;
+  final TextEditingController attemptController;
+  final ValueChanged<String?> onStatusChanged;
+  final ValueChanged<String?> onAttentionChanged;
+  final VoidCallback onApply;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: 230,
+              child: DropdownButtonFormField<String>(
+                value: status,
+                decoration: const InputDecoration(labelText: 'Case status'),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All statuses')),
+                  DropdownMenuItem(value: 'awaiting_review', child: Text('Awaiting review')),
+                  DropdownMenuItem(value: 'sent_to_hod', child: Text('Sent to HoD')),
+                  DropdownMenuItem(value: 'requires_student_explanation', child: Text('Requires explanation')),
+                  DropdownMenuItem(value: 'cleared', child: Text('Cleared')),
+                  DropdownMenuItem(value: 'marked_incorrect_alert', child: Text('Incorrect alert')),
+                  DropdownMenuItem(value: 'finalized', child: Text('Finalized')),
+                ],
+                onChanged: onStatusChanged,
+              ),
+            ),
+            SizedBox(
+              width: 250,
+              child: DropdownButtonFormField<String>(
+                value: attentionLevel,
+                decoration: const InputDecoration(labelText: 'Attention level'),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All levels')),
+                  DropdownMenuItem(value: 'medium_attention_required', child: Text('Medium attention required')),
+                  DropdownMenuItem(value: 'high_attention_required', child: Text('High attention required')),
+                  DropdownMenuItem(value: 'urgent_review_required', child: Text('Urgent review required')),
+                ],
+                onChanged: onAttentionChanged,
+              ),
+            ),
+            SizedBox(
+              width: 170,
+              child: TextField(
+                controller: courseController,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  labelText: 'Course code',
+                  hintText: 'CSC204',
+                ),
+                onSubmitted: (_) => onApply(),
+              ),
+            ),
+            SizedBox(
+              width: 220,
+              child: TextField(
+                controller: attemptController,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  labelText: 'Attempt ID',
+                  hintText: 'attempt-demo-001',
+                ),
+                onSubmitted: (_) => onApply(),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: onApply,
+              icon: const Icon(Icons.search_outlined),
+              label: const Text('Apply'),
+            ),
+            TextButton.icon(
+              onPressed: onClear,
+              icon: const Icon(Icons.clear_outlined),
+              label: const Text('Clear'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -157,8 +417,8 @@ class _SummaryCard extends StatelessWidget {
                     Text(
                       value,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
                     Text(title),
                   ],
@@ -173,13 +433,20 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _ReviewCaseCard extends StatelessWidget {
-  const _ReviewCaseCard({required this.item});
+  const _ReviewCaseCard({
+    required this.item,
+    required this.busyAction,
+    required this.onAction,
+  });
 
-  final _ReviewCase item;
+  final ReviewEvidenceCase item;
+  final String? busyAction;
+  final ValueChanged<String> onAction;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final busy = busyAction != null;
     return Card(
       elevation: 0,
       child: Padding(
@@ -195,18 +462,27 @@ class _ReviewCaseCard extends StatelessWidget {
                 Text(
                   item.studentName,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
-                Chip(label: Text(item.attentionLevel)),
+                Chip(label: Text(reviewLabel(item.attentionLevel))),
                 Chip(
                   avatar: const Icon(Icons.hourglass_bottom_outlined, size: 18),
-                  label: Text(item.status),
+                  label: Text(reviewLabel(item.status)),
                 ),
+                if (item.riskPoints > 0)
+                  Chip(label: Text('${item.riskPoints} alert points')),
               ],
             ),
             const SizedBox(height: 6),
-            Text('${item.matricNumber} • ${item.course}'),
+            Text('${item.matricNumber.isEmpty ? 'No matric number' : item.matricNumber} • ${item.courseLabel}'),
+            const SizedBox(height: 4),
+            Text(
+              item.assessmentLabel,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+            ),
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
@@ -221,8 +497,8 @@ class _ReviewCaseCard extends StatelessWidget {
                   Text(
                     'Review Summary',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                   const SizedBox(height: 6),
                   Text(item.reviewSummary),
@@ -254,6 +530,57 @@ class _ReviewCaseCard extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _ActionButton(
+                  label: 'Incorrect alert',
+                  icon: Icons.report_off_outlined,
+                  action: 'mark-incorrect-alert',
+                  busyAction: busyAction,
+                  enabled: !busy,
+                  onAction: onAction,
+                ),
+                _ActionButton(
+                  label: 'Clear case',
+                  icon: Icons.verified_outlined,
+                  action: 'clear',
+                  busyAction: busyAction,
+                  enabled: !busy,
+                  onAction: onAction,
+                ),
+                _ActionButton(
+                  label: 'Send to HoD',
+                  icon: Icons.account_tree_outlined,
+                  action: 'send-to-hod',
+                  busyAction: busyAction,
+                  enabled: !busy,
+                  onAction: onAction,
+                ),
+                _ActionButton(
+                  label: 'Request explanation',
+                  icon: Icons.chat_outlined,
+                  action: 'request-student-explanation',
+                  busyAction: busyAction,
+                  enabled: !busy,
+                  onAction: onAction,
+                ),
+                _ActionButton(
+                  label: 'Finalize',
+                  icon: Icons.task_alt_outlined,
+                  action: 'finalize',
+                  busyAction: busyAction,
+                  enabled: !busy,
+                  onAction: onAction,
+                ),
+              ],
+            ),
+            if (item.actions.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _ActionHistory(actions: item.actions),
+            ],
           ],
         ),
       ),
@@ -261,10 +588,44 @@ class _ReviewCaseCard extends StatelessWidget {
   }
 }
 
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.action,
+    required this.busyAction,
+    required this.enabled,
+    required this.onAction,
+  });
+
+  final String label;
+  final IconData icon;
+  final String action;
+  final String? busyAction;
+  final bool enabled;
+  final ValueChanged<String> onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = busyAction == action;
+    return OutlinedButton.icon(
+      onPressed: enabled ? () => onAction(action) : null,
+      icon: busy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon),
+      label: Text(busy ? 'Saving...' : label),
+    );
+  }
+}
+
 class _EvidenceList extends StatelessWidget {
   const _EvidenceList({required this.files});
 
-  final List<_EvidenceFile> files;
+  final List<ReviewEvidenceFile> files;
 
   @override
   Widget build(BuildContext context) {
@@ -272,27 +633,35 @@ class _EvidenceList extends StatelessWidget {
       title: 'Evidence Files',
       icon: Icons.folder_copy_outlined,
       children: [
-        for (final file in files)
-          ListTile(
+        if (files.isEmpty)
+          const ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.insert_drive_file_outlined),
-            title: Text(file.title),
-            subtitle: Text('${file.type} • ${file.detail}'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  file.status,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  file.source,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+            leading: Icon(Icons.info_outline),
+            title: Text('No evidence files attached yet'),
+            subtitle: Text('Activity records may still be available in the timeline.'),
+          )
+        else
+          for (final file in files)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: Text(file.title),
+              subtitle: Text('${reviewLabel(file.evidenceType)} • ${file.detail.isEmpty ? 'Record saved for review.' : file.detail}'),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    reviewLabel(file.status),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    file.sourceKey.isEmpty ? 'review_record' : file.sourceKey,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-          ),
       ],
     );
   }
@@ -301,7 +670,7 @@ class _EvidenceList extends StatelessWidget {
 class _TimelineList extends StatelessWidget {
   const _TimelineList({required this.items});
 
-  final List<String> items;
+  final List<ReviewTimelineItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -309,11 +678,55 @@ class _TimelineList extends StatelessWidget {
       title: 'Activity Timeline',
       icon: Icons.timeline_outlined,
       children: [
-        for (var index = 0; index < items.length; index++)
+        if (items.isEmpty)
+          const ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.info_outline),
+            title: Text('No timeline records attached yet'),
+            subtitle: Text('New activity records will appear here after sync.'),
+          )
+        else
+          for (var index = 0; index < items.length; index++)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(child: Text('${index + 1}')),
+              title: Text(items[index].message),
+              subtitle: Text(
+                [
+                  if (items[index].eventType.isNotEmpty) reviewLabel(items[index].eventType),
+                  if (items[index].alertLevel.isNotEmpty) reviewLabel(items[index].alertLevel),
+                  if (items[index].eventTime != null) _formatDate(items[index].eventTime!),
+                ].join(' • '),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+class _ActionHistory extends StatelessWidget {
+  const _ActionHistory({required this.actions});
+
+  final List<ReviewAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionShell(
+      title: 'Review Actions',
+      icon: Icons.history_outlined,
+      children: [
+        for (final action in actions)
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: CircleAvatar(child: Text('${index + 1}')),
-            title: Text(items[index]),
+            leading: const Icon(Icons.check_circle_outline),
+            title: Text(reviewLabel(action.action)),
+            subtitle: Text(
+              [
+                if (action.actorRole.isNotEmpty) reviewLabel(action.actorRole),
+                if (action.comment.isNotEmpty) action.comment,
+                if (action.createdAt != null) _formatDate(action.createdAt!),
+              ].join(' • '),
+            ),
           ),
       ],
     );
@@ -351,8 +764,8 @@ class _SectionShell extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                      fontWeight: FontWeight.w900,
+                    ),
               ),
             ],
           ),
@@ -364,40 +777,82 @@ class _SectionShell extends StatelessWidget {
   }
 }
 
-class _ReviewCase {
-  const _ReviewCase({
-    required this.studentName,
-    required this.matricNumber,
-    required this.course,
-    required this.attentionLevel,
-    required this.status,
-    required this.reviewSummary,
-    required this.evidenceFiles,
-    required this.timeline,
-  });
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message, required this.onRetry});
 
-  final String studentName;
-  final String matricNumber;
-  final String course;
-  final String attentionLevel;
-  final String status;
-  final String reviewSummary;
-  final List<_EvidenceFile> evidenceFiles;
-  final List<String> timeline;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: scheme.onErrorContainer),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: scheme.onErrorContainer),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
 }
 
-class _EvidenceFile {
-  const _EvidenceFile({
-    required this.title,
-    required this.type,
-    required this.source,
-    required this.status,
-    required this.detail,
-  });
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
 
-  final String title;
-  final String type;
-  final String source;
-  final String status;
-  final String detail;
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.verified_outlined,
+                size: 42,
+                color: scheme.primary,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'No review cases found',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Cases will appear here when student exam activity records are saved for human review.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatDate(DateTime value) {
+  final local = value.toLocal();
+  String two(int number) => number.toString().padLeft(2, '0');
+  return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
 }
